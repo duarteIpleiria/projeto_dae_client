@@ -43,7 +43,8 @@ async function login() {
       onResponse({ request, response, options }) {
 
         if (response.status === 200) {
-          token.value = response._data
+          
+          token.value = response._data.token
 
           const authCookie = useCookie('auth_token', {
             sameSite: 'lax',
