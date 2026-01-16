@@ -11,17 +11,26 @@ const appConfig = useAppConfig()
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'Benjamin Canac',
-  avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
-  }
-})
 
 
 const authStore = useAuthStore()
 const router = useRouter()
+import { storeToRefs } from 'pinia'
+
+
+const { user } = storeToRefs(authStore)
+
+console.log('user in UserMenu.vue: ', user.value)
+const userLocal = computed(() => ({
+  name: user.value?.name ?? 'Guest User',
+  avatar: {
+    src: 'https://github.com/benjamincanac.png',
+    alt: user.value?.name ?? 'Guest User'
+  }
+}))
+
+
+
 
 function handleLogout() {
   authStore.logout()
@@ -32,8 +41,8 @@ function handleLogout() {
 
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
-  label: user.value.name,
-  avatar: user.value.avatar
+  label: userLocal.value.name,
+  avatar: userLocal.value.avatar
 }], [{
   label: 'Profile',
   icon: 'i-lucide-user'
@@ -170,8 +179,8 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   <UDropdownMenu :items="items" :content="{ align: 'center', collisionPadding: 12 }"
     :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }">
     <UButton v-bind="{
-      ...user,
-      label: collapsed ? undefined : user?.name,
+      ...userLocal,
+      label: collapsed ? undefined : userLocal?.name,
       trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
     }" color="neutral" variant="ghost" block :square="collapsed" class="data-[state=open]:bg-elevated" :ui="{
         trailingIcon: 'text-dimmed'

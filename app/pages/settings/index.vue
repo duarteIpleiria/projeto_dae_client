@@ -21,6 +21,7 @@ const profile = reactive<Partial<ProfileSchema>>({
   avatar: undefined,
   bio: undefined
 })
+
 const toast = useToast()
 async function onSubmit(event: FormSubmitEvent<ProfileSchema>) {
   toast.add({

@@ -12,6 +12,28 @@ export interface User {
   location: string
 }
 
+export interface Publication {
+  id: number
+  title: string
+  scientificArea: string
+  summary: string
+  visible: boolean
+  fileUrl: string
+
+  author: {
+    id: number
+    name: string
+  }
+
+  averageRating: number
+  ratingsCount: number
+  tags: string[]
+  comments: any[] | null
+
+  createdAt: number
+  updatedAt: number | null
+}
+
 export interface Mail {
   id: number
   unread?: boolean

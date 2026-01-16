@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-
+const authStore = useAuthStore()
+authStore.init()
 const route = useRoute()
 const colorMode = useColorMode()
 

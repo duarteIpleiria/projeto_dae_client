@@ -43,15 +43,17 @@ async function login() {
       onResponse({ request, response, options }) {
 
         if (response.status === 200) {
-          
+
           token.value = response._data.token
+          user.value = response._data.user
+
 
           const authCookie = useCookie('auth_token', {
             sameSite: 'lax',
             secure: true
           })
 
-          authCookie.value = response._data
+          authCookie.value = response._data.token 
 
           toast.add({
             title: 'Login com sucesso',
@@ -84,29 +86,6 @@ async function login() {
 }
 
 
-/*
-const login = async () => {
-  loading.value = true
-
-  // 👉 EXEMPLO SIMPLES (mock)
-  if (email.value === 'admin@test.com' && password.value === '1234') {
-    useCookie('auth').value = 'true'
-    toast.add({
-      title: 'Login com sucesso',
-      description: 'Bem-vindo ao dashboard',
-      color: 'success'
-    })
-    router.push('/')
-  } else {
-    toast.add({
-      title: 'Credenciais inválidas',
-      description: 'Verifica o email e a password',
-      color: 'error'
-    })
-  }
-
-  loading.value = false
-}*/
 </script>
 
 <template>

@@ -13,11 +13,19 @@ export const useAuthStore = defineStore('authStore', () => {
   }
 
   function logout() {
+    const authCookie = useCookie('auth_token')
+    authCookie.value = null
+
     token.value = null
     user.value = null
-    useCookie('auth_token').value = null
+
     navigateTo('/login')
   }
 
-  return { token, user, init, logout }
+  return {
+    token,
+    user,
+    init,
+    logout
+  }
 })
