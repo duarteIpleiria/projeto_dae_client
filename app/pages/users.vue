@@ -19,6 +19,7 @@ const toast = useToast()
 const table = useTemplateRef('table')
 
 const selectedUser = ref<UserData | null>(null)
+const selectedUserForRoleChange = ref<UserData | null>(null)
 
 const { data, error, refresh, status } = useFetch(`${api}/users`, {
   headers: {
@@ -45,6 +46,18 @@ function getRowItems(row: Row<UserData>) {
         })
       }
     },
+    ...(authStore.user.role === 'Administrador' && row.original.id !== authStore.user.id ? [
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Change Role',
+        icon: 'i-lucide-user-cog',
+        onSelect() {
+          selectedUserForRoleChange.value = row.original
+        }
+      }
+    ] : []),
     {
       type: 'separator'
     },
@@ -152,6 +165,17 @@ const pagination = ref({
     }"
     @close="() => {
       selectedUser = null
+    }"
+  />
+
+  <UsersChangeRoleModal
+    :user="selectedUserForRoleChange"
+    @updated="() => {
+      refresh()
+      selectedUserForRoleChange = null
+    }"
+    @close="() => {
+      selectedUserForRoleChange = null
     }"
   />
 </template>
