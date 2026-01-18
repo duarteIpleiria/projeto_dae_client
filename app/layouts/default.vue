@@ -22,6 +22,20 @@ const links = [[{
   onSelect: () => {
     open.value = false
   }
+}, {
+  label: 'Tags',
+  icon: 'i-lucide-tags',
+  to: '/tags',
+  onSelect: () => {
+    open.value = false
+  }
+}, {
+  label: 'Users',
+  icon: 'i-lucide-user',
+  to: '/users',
+  onSelect: () => {
+    open.value = false
+  }
 }], []] satisfies NavigationMenuItem[][]
 
 onMounted(async () => {

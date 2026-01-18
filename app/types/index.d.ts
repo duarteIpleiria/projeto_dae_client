@@ -34,6 +34,20 @@ export interface Publication {
   updatedAt: number | null
 }
 
+export interface Tag {
+  id: number
+  name: string
+  tags: null
+}
+
+export interface UserData {
+  id: number
+  name: string
+  email: string
+  role: string
+  password: string | null
+}
+
 export interface Mail {
   id: number
   unread?: boolean
