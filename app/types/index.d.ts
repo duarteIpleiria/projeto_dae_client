@@ -40,6 +40,14 @@ export interface Tag {
   tags: null
 }
 
+export interface UserData {
+  id: number
+  name: string
+  email: string
+  role: string
+  password: string | null
+}
+
 export interface Mail {
   id: number
   unread?: boolean
