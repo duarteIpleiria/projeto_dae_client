@@ -47,10 +47,15 @@ async function login() {
           token.value = response._data.token
           user.value = response._data.user
 
+          // Store user info in localStorage for persistence
+          if (response._data.user) {
+            localStorage.setItem('user_info', JSON.stringify(response._data.user))
+          }
 
           const authCookie = useCookie('auth_token', {
             sameSite: 'lax',
-            secure: true
+            path: '/',
+            secure: process.env.NODE_ENV === 'production'
           })
 
           authCookie.value = response._data.token 

@@ -1,10 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 const authStore = useAuthStore()
 authStore.init()
 const route = useRoute()
 const colorMode = useColorMode()
+const { getCurrentUser } = useUser()
+
+// Carregar dados do user ao iniciar
+onMounted(async () => {
+  try {
+    const tokenCookie = useCookie('auth_token')
+    console.log('App mounted, token from cookie:', !!tokenCookie.value)
+    
+    if (tokenCookie.value && authStore.user) {
+      console.log('User loaded from localStorage/JWT:', authStore.user)
+      // User data already restored from localStorage in authStore.init()
+      // /users/me endpoint is for PATCH (updates) only, not GET
+    }
+  } catch (e) {
+    console.error('Error loading user:', e)
+  }
+})
 
 const color = computed(() =>
   colorMode.value === 'dark' ? '#1b1718' : 'white'
@@ -36,11 +53,6 @@ useSeoMeta({
   ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
   twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
   twitterCard: 'summary_large_image'
-})
-
-
-definePageMeta({
-  layout: 'auth'
 })
 
 </script>

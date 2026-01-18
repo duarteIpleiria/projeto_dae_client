@@ -1,277 +1,319 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth-store'
+import { storeToRefs } from 'pinia'
 
+definePageMeta({
+  layout: 'default'
+})
 
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
-import { useAuthStore } from "~/stores/auth-store.js";
-
-const authStore = useAuthStore();
-const token = authStore.token;
-
-const config = useRuntimeConfig()
-const api = config.public.apiBase
-
-
-import type { TableColumn } from '@nuxt/ui'
-import { upperFirst } from 'scule'
-import { getPaginationRowModel } from '@tanstack/table-core'
-import type { Row } from '@tanstack/table-core'
-import type { Publication } from '~/types'
-import { vi } from "zod/locales";
-
-const UAvatar = resolveComponent('UAvatar')
-const UButton = resolveComponent('UButton')
-const UBadge = resolveComponent('UBadge')
-const UDropdownMenu = resolveComponent('UDropdownMenu')
-const UCheckbox = resolveComponent('UCheckbox')
+const { 
+  publications, 
+  loading, 
+  fetchUserPublications, 
+  togglePublicationVisibility,
+  sortPublications,
+  searchPublications,
+  clearPublications
+} = usePublications()
 
 const toast = useToast()
-const table = useTemplateRef('table')
 
-const selectedPublication = ref<Publication | null>(null)
-const rowSelection = ref({ 1: true })
+const showAddModal = ref(false)
+const showRateModal = ref(false)
+const showEditSummaryModal = ref(false)
+const selectedPublicationForRating = ref<any>(null)
+const selectedPublicationForEdit = ref<any>(null)
 
-const columnFilters = ref([{
-  id: 'email',
-  value: ''
-}])
-const columnVisibility = ref()
+const searchQuery = ref('')
+const selectedFilter = ref<'all' | 'visible' | 'hidden'>('all')
+const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count'>('average_rating')
+const sortOrder = ref<'asc' | 'desc'>('desc')
+
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
 
 
-
-
-const { data, error, refresh, status } = useFetch(`${api}/posts`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-
-const publications = computed(() => (data.value as any) || []);
-
-function getRowItems(row: Row<Publication>) {
-  return [
-    {
-      type: 'label',
-      label: 'Actions'
-    },
-    {
-      label: 'Copy publication ID',
-      icon: 'i-lucide-copy',
-      onSelect() {
-        navigator.clipboard.writeText(row.original.id.toString())
-        toast.add({
-          title: 'Copied to clipboard',
-          description: 'Publication ID copied to clipboard'
-        })
-      }
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'View publication details',
-      icon: 'i-lucide-list',
-      onSelect() {
-        selectedPublication.value = row.original
-      }
-    },
-
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Delete publication',
-      icon: 'i-lucide-trash',
-      color: 'error',
-      onSelect() {
-        toast.add({
-          title: 'Publication deleted',
-          description: 'The publication has been deleted.'
-        })
-      }
-    }
-  ]
+// ===== CARREGAR PUBLICAÇÕES =====
+const loadPublications = async () => {
+  try {
+    await fetchUserPublications({
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      is_visible: selectedFilter.value === 'all' ? undefined : selectedFilter.value === 'visible'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Erro',
+      description: 'Falha ao carregar publicações',
+      color: 'error'
+    })
+  }
 }
 
-const columns: TableColumn<Publication>[] = [
-  {
-    id: 'select',
-    header: ({ table }) =>
-      h(UCheckbox, {
-        modelValue: table.getIsSomePageRowsSelected() ? 'indeterminate' : table.getIsAllPageRowsSelected(),
-        'onUpdate:modelValue': (value: boolean) =>
-          table.toggleAllPageRowsSelected(!!value),
-        ariaLabel: 'Select all'
-      }),
-    cell: ({ row }) =>
-      h(UCheckbox, {
-        modelValue: row.getIsSelected(),
-        'onUpdate:modelValue': (value: boolean) =>
-          row.toggleSelected(!!value),
-        ariaLabel: 'Select row'
-      })
-  },
-
-  {
-    accessorKey: 'id',
-    header: 'ID'
-  },
-
-  {
-    accessorKey: 'title',
-    header: 'Título'
-  },
-
-  {
-    accessorKey: 'scientificArea',
-    header: 'Área Científica'
-  },
-
-  {
-    id: 'author',
-    header: 'Autor',
-    cell: ({ row }) => row.original.author.name
-  },
-
-  {
-    accessorKey: 'visible',
-    header: 'Visível',
-    cell: ({ row }) =>
-      h(
-        UBadge,
-        {
-          color: row.original.visible ? 'success' : 'error',
-          variant: 'subtle'
-        },
-        () => (row.original.visible ? 'Sim' : 'Não')
-      )
-  },
-
-  {
-    accessorKey: 'averageRating',
-    header: 'Rating'
-  },
-
-  {
-    id: 'actions',
-    cell: ({ row }) =>
-      h(
-        UDropdownMenu,
-        {
-          content: { align: 'end' },
-          items: getRowItems(row)
-        },
-        () =>
-          h(UButton, {
-            icon: 'i-lucide-ellipsis-vertical',
-            color: 'neutral',
-            variant: 'ghost'
-          })
-      )
+// ===== ORDENAR =====
+const handleSort = async () => {
+  try {
+    await sortPublications({
+      sort_by: sortBy.value,
+      order: sortOrder.value
+    })
+    
+    toast.add({
+      title: 'Sucesso',
+      description: 'Publicações ordenadas',
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Erro',
+      description: 'Falha ao ordenar publicações',
+      color: 'error'
+    })
   }
-]
-const statusFilter = ref('all')
+}
 
-watch(() => statusFilter.value, (newVal) => {
-  if (!table?.value?.tableApi) return
-
-  const statusColumn = table.value.tableApi.getColumn('status')
-  if (!statusColumn) return
-
-  if (newVal === 'all') {
-    statusColumn.setFilterValue(undefined)
-  } else {
-    statusColumn.setFilterValue(newVal)
+// ===== PESQUISAR =====
+const handleSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    await loadPublications()
+    return
   }
-})
 
-const title = computed({
-  get: (): string => {
-    return (table.value?.tableApi?.getColumn('title')?.getFilterValue() as string) || ''
-  },
-  set: (value: string) => {
-    table.value?.tableApi?.getColumn('title')?.setFilterValue(value || undefined)
+  try {
+    await searchPublications({
+      title: searchQuery.value
+    })
+
+    toast.add({
+      title: 'Sucesso',
+      description: 'Publicações pesquisadas',
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Erro',
+      description: 'Falha ao pesquisar publicações',
+      color: 'error'
+    })
   }
-})
+}
 
-const pagination = ref({
-  pageIndex: 0,
-  pageSize: 10
+// ===== ALTERAR VISIBILIDADE =====
+const handleToggleVisibility = async (publicationId: number, newVisibility: boolean) => {
+  try {
+    await togglePublicationVisibility(publicationId, newVisibility)
+
+    await loadPublications()
+
+    toast.add({
+      title: 'Sucesso',
+      description: newVisibility ? 'Publicação visível' : 'Publicação oculta',
+      color: 'success'
+    })
+  } catch (error) {
+    toast.add({
+      title: 'Erro',
+      description: 'Falha ao alterar visibilidade',
+      color: 'error'
+    })
+  }
+}
+
+// ===== ABRIR MODAL DE RATING =====
+const handleRatePublication = (publication: any) => {
+  selectedPublicationForRating.value = publication
+  showRateModal.value = true
+}
+
+// ===== RATING SUBMETIDO =====
+const handleRatingSubmitted = async () => {
+  showRateModal.value = false
+  selectedPublicationForRating.value = null
+  await loadPublications()
+}
+
+// ===== ABRIR MODAL DE EDITAR RESUMO =====
+const handleEditSummary = (publication: any) => {
+  selectedPublicationForEdit.value = publication
+  showEditSummaryModal.value = true
+}
+
+// ===== RESUMO ATUALIZADO =====
+const handleSummaryUpdated = async () => {
+  showEditSummaryModal.value = false
+  selectedPublicationForEdit.value = null
+  await loadPublications()
+}
+
+// ===== PUBLICAÇÃO CRIADA COM SUCESSO =====
+const handlePublicationCreated = async () => {
+  showAddModal.value = false
+  toast.add({
+    title: 'Sucesso',
+    description: 'Publicação criada com sucesso',
+    color: 'success'
+  })
+  await loadPublications()
+}
+
+// ===== INICIALIZAR =====
+onMounted(() => {
+  loadPublications()
 })
 </script>
 
 <template>
-  <UDashboardPanel id="publicatione">
+  <UDashboardPanel id="publications">
     <template #header>
-      <UDashboardNavbar title="Publications">
+      <UDashboardNavbar title="Publicações">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <PublicationsAddModal @created="refresh" />
+          <UButton
+            icon="i-lucide-plus"
+            size="md"
+            @click="showAddModal = true"
+          >
+            Nova Publicação
+          </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
-      <div class="flex flex-wrap items-center justify-between gap-1.5">
-        <UInput v-model="title" class="max-w-sm" icon="i-lucide-search" placeholder="Filter..." />
+      <!-- Filtros e Pesquisa -->
+      <UCard class="shadow-sm">
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-filter" />
+            <span>Filtros e Busca</span>
+          </div>
+        </template>
 
-        <div class="flex flex-wrap items-center gap-1.5">
-          <PublicationsDeleteModal :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
-            <UButton v-if="table?.tableApi?.getFilteredSelectedRowModel().rows.length" label="Delete" color="error"
-              variant="subtle" icon="i-lucide-trash">
-              <template #trailing>
-                <UKbd>
-                  {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length }}
-                </UKbd>
-              </template>
+        <div class="space-y-4">
+          <!-- Pesquisa -->
+          <div class="flex gap-2">
+            <UInput
+              v-model="searchQuery"
+              placeholder="Pesquisar por título..."
+              icon="i-lucide-search"
+              @keyup.enter="handleSearch"
+              class="flex-1"
+            />
+            <UButton
+              @click="handleSearch"
+              :loading="loading"
+            >
+              Pesquisar
             </UButton>
-          </PublicationsDeleteModal>
+          </div>
 
+          <!-- Filtros -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Filtro de Visibilidade -->
+            <div>
+              <label class="text-sm font-medium">Visibilidade</label>
+              <USelect
+                v-model="selectedFilter"
+                :options="[
+                  { value: 'all', label: 'Todas' },
+                  { value: 'visible', label: 'Visíveis' },
+                  { value: 'hidden', label: 'Ocultas' }
+                ]"
+                option-attribute="label"
+                value-attribute="value"
+                @change="loadPublications"
+              />
+            </div>
 
-          <UDropdownMenu :items="table?.tableApi
-            ?.getAllColumns()
-            .filter((column: any) => column.getCanHide())
-            .map((column: any) => ({
-              label: upperFirst(column.id),
-              type: 'checkbox' as const,
-              checked: column.getIsVisible(),
-              onUpdateChecked(checked: boolean) {
-                table?.tableApi?.getColumn(column.id)?.toggleVisibility(!!checked)
-              },
-              onSelect(e?: Event) {
-                e?.preventDefault()
-              }
-            }))
-            " :content="{ align: 'end' }">
-            <UButton label="Display" color="neutral" variant="outline" trailing-icon="i-lucide-settings-2" />
-          </UDropdownMenu>
+            <!-- Ordenar por -->
+            <div>
+              <label class="text-sm font-medium">Ordenar por</label>
+              <USelect
+                v-model="sortBy"
+                :options="[
+                  { value: 'average_rating', label: 'Rating Médio' },
+                  { value: 'comments_count', label: 'Comentários' },
+                  { value: 'ratings_count', label: 'Número de Ratings' }
+                ]"
+                option-attribute="label"
+                value-attribute="value"
+              />
+            </div>
+
+            <!-- Ordem -->
+            <div>
+              <label class="text-sm font-medium">Ordem</label>
+              <div class="flex gap-2">
+                <USelect
+                  v-model="sortOrder"
+                  :options="[
+                    { value: 'desc', label: 'Descendente' },
+                    { value: 'asc', label: 'Ascendente' }
+                  ]"
+                  option-attribute="label"
+                  value-attribute="value"
+                  class="flex-1"
+                />
+                <UButton
+                  @click="handleSort"
+                  :loading="loading"
+                  icon="i-lucide-arrow-up-down"
+                />
+              </div>
+            </div>
+          </div>
         </div>
+      </UCard>
+
+      <!-- Lista de Publicações -->
+      <div v-if="loading" class="flex justify-center py-12">
+        <UIcon name="i-lucide-loader" class="animate-spin text-2xl" />
       </div>
 
-      <UTable v-if="status === 'success'" ref="table" :data="publications" :columns="columns"
-        v-model:row-selection="rowSelection" v-model:pagination="pagination"
-        :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" />
+      <div v-else-if="publications.length === 0" class="text-center py-12">
+        <UIcon name="i-lucide-inbox" class="mx-auto text-4xl text-gray-400 mb-4" />
+        <p class="text-gray-500">Nenhuma publicação encontrada</p>
+      </div>
 
-      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
-        <div class="text-sm text-muted">
-          {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of
-          {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
-        </div>
-
-        <div class="flex items-center gap-1.5">
-          <UPagination :default-page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
-            :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-            :total="table?.tableApi?.getFilteredRowModel().rows.length"
-            @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
-        </div>
+      <div v-else class="space-y-3">
+        <PublicationsListItem
+          v-for="publication in publications"
+          :key="publication.id"
+          :publication="publication"
+          :current-user-id="user?.id"
+          @toggle-visibility="handleToggleVisibility"
+          @rate="handleRatePublication"
+          @edit-summary="handleEditSummary"
+        />
       </div>
     </template>
   </UDashboardPanel>
 
-  <PublicationsEditModal :publication="selectedPublication" @updated="() => {
-    refresh()
-    selectedPublication = null
-  }" />
+  <!-- Modal de Criar Publicação -->
+  <PublicationsAddModal
+    v-model="showAddModal"
+    @publication-created="handlePublicationCreated"
+  />
+
+  <!-- Modal de Rating -->
+  <PublicationsRateModal
+    v-model="showRateModal"
+    :publication="selectedPublicationForRating"
+    :current-user-id="user?.id"
+    @rating-submitted="handleRatingSubmitted"
+  />
+
+  <!-- Modal de Editar Resumo -->
+  <PublicationsEditSummaryModal
+    v-model="showEditSummaryModal"
+    :publication="selectedPublicationForEdit"
+    @summary-updated="handleSummaryUpdated"
+  />
 </template>
