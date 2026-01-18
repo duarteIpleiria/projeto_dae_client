@@ -16,6 +16,7 @@ const toast = useToast()
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
+const forgotPasswordOpen = ref(false)
 
 const authStore = useAuthStore()
 const { token, user } = storeToRefs(authStore)
@@ -123,6 +124,17 @@ async function login() {
         <UButton type="submit" block size="lg" color="primary" :loading="loading">
           Entrar
         </UButton>
+
+        <!-- Forgot Password Link -->
+        <div class="text-center">
+          <button
+            type="button"
+            @click="forgotPasswordOpen = true"
+            class="text-sm text-primary hover:underline focus:outline-none focus:underline"
+          >
+            Esqueceu a password?
+          </button>
+        </div>
       </UForm>
 
       <!-- Footer -->
@@ -130,5 +142,7 @@ async function login() {
         © {{ new Date().getFullYear() }} • Projeto DAE
       </div>
     </UCard>
+
+    <AuthForgotPasswordModal v-model:open="forgotPasswordOpen" />
   </div>
 </template>
