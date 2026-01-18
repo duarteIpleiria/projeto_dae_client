@@ -43,6 +43,40 @@ export default defineEventHandler(async (event) => {
       return response
     }
 
+    if (method === 'PUT') {
+      // Update user role
+      const userId = event.context.params?._?.split('/')[0]
+      const endpoint = event.context.params?._
+      
+      if (!userId) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'User ID parameter is required'
+        })
+      }
+
+      // Check if this is a role update endpoint
+      if (endpoint?.endsWith('/role')) {
+        const body = await readBody(event)
+        
+        const response = await $fetch(`${apiBase}/users/${userId}/role`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+
+        return response
+      }
+
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Endpoint not found'
+      })
+    }
+
     if (method === 'DELETE') {
       // Delete a user by ID (from route params)
       const userId = event.context.params?._
