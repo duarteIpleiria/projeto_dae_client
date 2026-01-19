@@ -28,11 +28,46 @@ const { data, error, refresh, status } = useFetch(`${api}/tags`, {
 
 const tags = computed(() => (data.value as any) || []);
 
+async function subscribeToTag(tag: Tag) {
+  const { data, error } = await useFetch(`${api}/tags/${tag.id}/subscribe`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({})
+  })
+
+  if (error.value) {
+    toast.add({
+      title: 'Erro',
+      description: 'Erro ao subscrever a tag',
+      color: 'error'
+    })
+    return
+  }
+
+  toast.add({
+    title: 'Sucesso',
+    description: 'Tag subscrita com sucesso',
+    color: 'success'
+  })
+
+  refresh()
+}
+
 function getRowItems(row: Row<Tag>) {
   return [
     {
       type: 'label',
       label: 'Actions'
+    },
+    {
+      label: 'Subscribe',
+      icon: 'i-lucide-bell-plus',
+      onSelect() {
+        subscribeToTag(row.original)
+      }
     },
     {
       label: 'Copy tag ID',
