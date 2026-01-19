@@ -103,9 +103,11 @@ export const usePublications = () => {
     title?: string
     author_id?: number
     scientific_area?: string
-    tags?: number[]
-    date_from?: string
-    date_to?: string
+    page?: number
+    limit?: number
+    //tags?: number[]
+    //date_from?: string
+    //date_to?: string
   }) => {
     loading.value = true
     error.value = null
@@ -123,9 +125,7 @@ export const usePublications = () => {
         body: searchFilters
       })
 
-      publications.value = Array.isArray(response)
-        ? response.map(normalizePublication)
-        : []
+      publications.value = Array.isArray(response)? response.map(normalizePublication): []
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao pesquisar publicações'

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 interface Publication {
   id: number
@@ -16,8 +16,8 @@ interface Publication {
   ratings_count: number
   comments_count?: number
   tags: Array<{ id: number; name: string }>
-  created_at: string
-  updated_at: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface Props {
@@ -33,8 +33,9 @@ const emit = defineEmits<{
   'edit-summary': [publication: Publication]
 }>()
 
-const isAuthor = computed(() => {
-  return props.currentUserId && props.publication.author.id === props.currentUserId
+const isAuthor = computed((): boolean => {
+  return !!props.currentUserId &&
+    props.publication.author.id === props.currentUserId
 })
 
 const visibilityState = ref<boolean>(props.publication.is_visible)
@@ -56,12 +57,14 @@ const handleVisibilityChange = () => {
 }
 
 const formattedDate = computed(() => {
-  return new Date(props.publication.created_at).toLocaleDateString('pt-PT', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  const d = new Date(props.publication.createdAt)
+
+  const pad = n => String(n).padStart(2, '0')
+
+  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`
 })
+
+
 
 const visibilityBadgeColor = computed(() => {
   return props.publication.is_visible ? 'green' : 'gray'
@@ -91,14 +94,9 @@ const visibilityLabel = computed(() => {
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
-          <UButton
-            v-if="isAuthor"
-            color="gray"
-            variant="ghost"
-            size="sm"
+          <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm"
             :icon="publication.is_visible ? 'i-lucide-eye' : 'i-lucide-eye-off'"
-            @click="$emit('toggle-visibility', publication.id, !publication.is_visible)"
-          />
+            @click="$emit('toggle-visibility', publication.id, !publication.is_visible)" />
           <UBadge v-else :color="visibilityBadgeColor" variant="subtle">
             {{ visibilityBadgeLabel }}
           </UBadge>
@@ -121,12 +119,8 @@ const visibilityLabel = computed(() => {
 
       <!-- Tags -->
       <div v-if="publication.tags.length" class="flex flex-wrap gap-2">
-        <UBadge
-          v-for="tag in publication.tags"
-          :key="tag.id"
-          variant="outline"
-          class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
-        >
+        <UBadge v-for="tag in publication.tags" :key="tag.id" variant="outline"
+          class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
           {{ tag.name }}
         </UBadge>
       </div>
@@ -146,25 +140,11 @@ const visibilityLabel = computed(() => {
 
       <!-- Ações -->
       <div class="flex items-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-        <UButton
-          v-if="isAuthor"
-          color="gray"
-          variant="ghost"
-          size="sm"
-          icon="i-lucide-pencil"
-          label="Editar Resumo"
-          @click="$emit('edit-summary', publication)"
-        />
+        <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
+          @click="$emit('edit-summary', publication)" />
 
-        <UButton
-          v-if="!isAuthor"
-          color="gray"
-          variant="ghost"
-          size="sm"
-          icon="i-lucide-star"
-          label="Avaliar"
-          @click="$emit('rate', publication)"
-        />
+        <UButton v-if="!isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
+          @click="$emit('rate', publication)" />
       </div>
     </div>
   </UCard>

@@ -82,35 +82,22 @@ const handleSubmit = async () => {
           </p>
         </div>
 
-        <!-- Textarea para editar o resumo -->
-        <div>
-          <label class="text-sm font-medium">Resumo</label>
-          <UTextarea
-            v-model="editedSummary"
-            :rows="8"
-            placeholder="Digite o resumo da publicação..."
-            class="mt-1"
-          />
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {{ editedSummary.length }} caracteres
-          </p>
-        </div>
+        <UFormGroup label="Resumo" description="Pode ajustar ou corrigir o texto antes de o guardar">
+          <UTextarea v-model="editedSummary" :rows="8" placeholder="Digite o resumo da publicação..." />
+
+          <template #help>
+            <span class="text-xs text-gray-400">
+              {{ editedSummary.length }} caracteres
+            </span>
+          </template>
+        </UFormGroup>
+
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <UButton
-            label="Cancelar"
-            color="gray"
-            variant="ghost"
-            @click="open = false"
-          />
-          <UButton
-            label="Salvar"
-            color="primary"
-            :disabled="!editedSummary.trim()"
-            :loading="loading"
-            @click="handleSubmit"
-          />
+          <UButton label="Cancelar" color="da" variant="ghost" @click="open = false" />
+          <UButton label="Salvar" color="primary" :disabled="!editedSummary.trim()" :loading="loading"
+            @click="handleSubmit" />
         </div>
       </div>
     </template>

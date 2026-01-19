@@ -10,10 +10,10 @@ definePageMeta({
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 
-const { 
-  publications, 
-  loading, 
-  fetchUserPublications, 
+const {
+  publications,
+  loading,
+  fetchUserPublications,
   togglePublicationVisibility,
   sortPublications,
   searchPublications,
@@ -24,7 +24,7 @@ const toast = useToast()
 
 const showAddModal = ref(false)
 const showRateModal = ref(false)
-const showEditSummaryModal = ref(false)
+const showEditModal = ref(false)
 const selectedPublicationForRating = ref<any>(null)
 const selectedPublicationForEdit = ref<any>(null)
 
@@ -61,7 +61,7 @@ const handleSort = async () => {
       sort_by: sortBy.value,
       order: sortOrder.value
     })
-    
+
     toast.add({
       title: 'Sucesso',
       description: 'Publicações ordenadas',
@@ -78,22 +78,23 @@ const handleSort = async () => {
 
 // ===== PESQUISAR =====
 const handleSearch = async () => {
-  if (!searchQuery.value.trim()) {
-    await loadPublications()
-    return
-  }
-
   try {
+    currentPage.value = 1
+
     await searchPublications({
-      title: searchQuery.value
+      title: searchQuery.value || undefined,
+      author_id: user?.id || undefined,
+      scientific_area: undefined, // liga depois se tiveres filtro
+      page: currentPage.value,
+      limit: itemsPerPage.value
     })
 
     toast.add({
       title: 'Sucesso',
-      description: 'Publicações pesquisadas',
+      description: 'Pesquisa efetuada',
       color: 'success'
     })
-  } catch (error) {
+  } catch {
     toast.add({
       title: 'Erro',
       description: 'Falha ao pesquisar publicações',
@@ -101,6 +102,24 @@ const handleSearch = async () => {
     })
   }
 }
+try {
+  await searchPublications({
+    title: searchQuery.value
+  })
+
+  toast.add({
+    title: 'Sucesso',
+    description: 'Publicações pesquisadas',
+    color: 'success'
+  })
+} catch (error) {
+  toast.add({
+    title: 'Erro',
+    description: 'Falha ao pesquisar publicações',
+    color: 'error'
+  })
+}
+
 
 // ===== ALTERAR VISIBILIDADE =====
 const handleToggleVisibility = async (publicationId: number, newVisibility: boolean) => {
@@ -138,13 +157,14 @@ const handleRatingSubmitted = async () => {
 
 // ===== ABRIR MODAL DE EDITAR RESUMO =====
 const handleEditSummary = (publication: any) => {
+console.log(publication)
   selectedPublicationForEdit.value = publication
-  showEditSummaryModal.value = true
+  showEditModal.value = true
 }
 
 // ===== RESUMO ATUALIZADO =====
-const handleSummaryUpdated = async () => {
-  showEditSummaryModal.value = false
+const handleEditModal = async () => {
+  showEditModal.value = false
   selectedPublicationForEdit.value = null
   await loadPublications()
 }
@@ -164,156 +184,92 @@ const handlePublicationCreated = async () => {
 onMounted(() => {
   loadPublications()
 })
-</script>
 
+
+
+</script>
 <template>
   <UDashboardPanel id="publications">
+    <!-- HEADER -->
     <template #header>
+      <!-- Navbar -->
       <UDashboardNavbar title="Publicações">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UButton
-            icon="i-lucide-plus"
-            size="md"
-            @click="showAddModal = true"
-          >
+          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
             Nova Publicação
           </UButton>
         </template>
       </UDashboardNavbar>
-    </template>
 
-    <template #body>
-      <!-- Filtros e Pesquisa -->
-      <UCard class="shadow-sm">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <UIcon name="i-lucide-filter" />
-            <span>Filtros e Busca</span>
-          </div>
-        </template>
+      <!-- Toolbar de Filtros -->
+      <UDashboardToolbar>
+        <UCard class="w-full">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Pesquisa -->
+            <UInput v-model="searchQuery" placeholder="Pesquisar por título..." icon="i-lucide-search"
+              @keyup.enter="handleSearch" />
 
-        <div class="space-y-4">
-          <!-- Pesquisa -->
-          <div class="flex gap-2">
-            <UInput
-              v-model="searchQuery"
-              placeholder="Pesquisar por título..."
-              icon="i-lucide-search"
-              @keyup.enter="handleSearch"
-              class="flex-1"
-            />
-            <UButton
-              @click="handleSearch"
-              :loading="loading"
-            >
-              Pesquisar
-            </UButton>
-          </div>
-
-          <!-- Filtros -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Filtro de Visibilidade -->
-            <div>
-              <label class="text-sm font-medium">Visibilidade</label>
-              <USelect
-                v-model="selectedFilter"
-                :options="[
-                  { value: 'all', label: 'Todas' },
-                  { value: 'visible', label: 'Visíveis' },
-                  { value: 'hidden', label: 'Ocultas' }
-                ]"
-                option-attribute="label"
-                value-attribute="value"
-                @change="loadPublications"
-              />
-            </div>
+            <!-- Visibilidade -->
+            <USelect v-model="selectedFilter" :options="[
+              { value: 'all', label: 'Todas' },
+              { value: 'visible', label: 'Visíveis' },
+              { value: 'hidden', label: 'Ocultas' }
+            ]" placeholder="Visibilidade" />
 
             <!-- Ordenar por -->
-            <div>
-              <label class="text-sm font-medium">Ordenar por</label>
-              <USelect
-                v-model="sortBy"
-                :options="[
-                  { value: 'average_rating', label: 'Rating Médio' },
-                  { value: 'comments_count', label: 'Comentários' },
-                  { value: 'ratings_count', label: 'Número de Ratings' }
-                ]"
-                option-attribute="label"
-                value-attribute="value"
-              />
-            </div>
+            <USelect v-model="sortBy" :options="[
+              { value: 'average_rating', label: 'Rating Médio' },
+              { value: 'comments_count', label: 'Comentários' },
+              { value: 'ratings_count', label: 'Nº de Ratings' }
+            ]" placeholder="Ordenar por" />
 
             <!-- Ordem -->
-            <div>
-              <label class="text-sm font-medium">Ordem</label>
-              <div class="flex gap-2">
-                <USelect
-                  v-model="sortOrder"
-                  :options="[
-                    { value: 'desc', label: 'Descendente' },
-                    { value: 'asc', label: 'Ascendente' }
-                  ]"
-                  option-attribute="label"
-                  value-attribute="value"
-                  class="flex-1"
-                />
-                <UButton
-                  @click="handleSort"
-                  :loading="loading"
-                  icon="i-lucide-arrow-up-down"
-                />
-              </div>
+            <div class="flex gap-2">
+              <USelect v-model="sortOrder" :options="[
+                { value: 'desc', label: 'Desc' },
+                { value: 'asc', label: 'Asc' }
+              ]" class="flex-1" />
+              <UButton icon="i-lucide-arrow-up-down" variant="ghost" @click="handleSort" />
             </div>
           </div>
-        </div>
-      </UCard>
+        </UCard>
+      </UDashboardToolbar>
+    </template>
 
-      <!-- Lista de Publicações -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-lucide-loader" class="animate-spin text-2xl" />
+    <!-- BODY -->
+    <template #body>
+      <!-- Loading -->
+      <div v-if="loading" class="flex justify-center items-center py-16">
+        <UIcon name="i-lucide-loader" class="animate-spin text-3xl text-gray-400" />
       </div>
 
-      <div v-else-if="publications.length === 0" class="text-center py-12">
-        <UIcon name="i-lucide-inbox" class="mx-auto text-4xl text-gray-400 mb-4" />
-        <p class="text-gray-500">Nenhuma publicação encontrada</p>
+      <!-- Sem resultados -->
+      <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
+        <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
+        Nenhuma publicação encontrada
       </div>
 
-      <div v-else class="space-y-3">
-        <PublicationsListItem
-          v-for="publication in publications"
-          :key="publication.id"
-          :publication="publication"
-          :current-user-id="user?.id"
-          @toggle-visibility="handleToggleVisibility"
-          @rate="handleRatePublication"
-          @edit-summary="handleEditSummary"
-        />
+      <!-- Lista -->
+      <div v-else class="space-y-4">
+        <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
+          :current-user-id="user?.id" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
+          @edit-summary="handleEditSummary" />
       </div>
     </template>
   </UDashboardPanel>
 
-  <!-- Modal de Criar Publicação -->
-  <PublicationsAddModal
-    v-model="showAddModal"
-    @publication-created="handlePublicationCreated"
-  />
+  <!-- Modais -->
+  <PublicationsAddModal v-model="showAddModal" @publication-created="handlePublicationCreated" />
 
-  <!-- Modal de Rating -->
-  <PublicationsRateModal
-    v-model="showRateModal"
-    :publication="selectedPublicationForRating"
-    :current-user-id="user?.id"
-    @rating-submitted="handleRatingSubmitted"
-  />
+  <PublicationsRateModal v-model="showRateModal" :publication="selectedPublicationForRating" :current-user-id="user?.id"
+    @rating-submitted="handleRatingSubmitted" />
 
-  <!-- Modal de Editar Resumo -->
-  <PublicationsEditSummaryModal
-    v-model="showEditSummaryModal"
-    :publication="selectedPublicationForEdit"
-    @summary-updated="handleSummaryUpdated"
-  />
+  <PublicationsEditModal v-model="showEditModal" :publication="selectedPublicationForEdit"
+   @publication-updated="handleEditModal"
+
+ />
 </template>
