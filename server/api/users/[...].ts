@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     }
 
     if (method === 'PUT') {
-      // Update user role
+      // Update user role or user data
       const userId = event.context.params?._?.split('/')[0]
       const endpoint = event.context.params?._
       
@@ -71,10 +71,19 @@ export default defineEventHandler(async (event) => {
         return response
       }
 
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Endpoint not found'
+      // Otherwise, it's a full user data update (EP23)
+      const body = await readBody(event)
+      
+      const response = await $fetch(`${apiBase}/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
       })
+
+      return response
     }
 
     if (method === 'DELETE') {
