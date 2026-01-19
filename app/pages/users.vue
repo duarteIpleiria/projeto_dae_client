@@ -19,6 +19,7 @@ const toast = useToast()
 const table = useTemplateRef('table')
 
 const selectedUser = ref<UserData | null>(null)
+const selectedUserForEdit = ref<UserData | null>(null)
 const selectedUserForRoleChange = ref<UserData | null>(null)
 
 const { data, error, refresh, status } = useFetch(`${api}/users`, {
@@ -49,6 +50,13 @@ function getRowItems(row: Row<UserData>) {
     ...(authStore.user.role === 'Administrador' && row.original.id !== authStore.user.id ? [
       {
         type: 'separator'
+      },
+      {
+        label: 'Edit user',
+        icon: 'i-lucide-pencil',
+        onSelect() {
+          selectedUserForEdit.value = row.original
+        }
       },
       {
         label: 'Change Role',
@@ -156,6 +164,17 @@ const pagination = ref({
       </div>
     </template>
   </UDashboardPanel>
+
+  <UsersEditModal
+    :user="selectedUserForEdit"
+    @updated="() => {
+      refresh()
+      selectedUserForEdit = null
+    }"
+    @close="() => {
+      selectedUserForEdit = null
+    }"
+  />
 
   <UsersDeleteModal
     :user="selectedUser"
