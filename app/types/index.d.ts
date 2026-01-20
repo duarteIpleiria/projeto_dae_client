@@ -27,7 +27,7 @@ export interface Publication {
 
   averageRating: number
   ratingsCount: number
-  tags: string[]
+  tags: Tag[]
   comments: any[] | null
 
   createdAt: number
@@ -37,7 +37,8 @@ export interface Publication {
 export interface Tag {
   id: number
   name: string
-  tags: null
+  visible?: boolean
+  createdAt?: number
 }
 
 export interface UserData {

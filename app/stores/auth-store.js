@@ -47,6 +47,11 @@ export const useAuthStore = defineStore('authStore', () => {
       if (decoded.email) {
         user.value.email = decoded.email
       }
+      
+      // Store updated user info in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('user_info', JSON.stringify(user.value))
+      }
     } catch (e) {
       console.error('Error extracting user ID from token:', e)
     }
@@ -69,6 +74,11 @@ export const useAuthStore = defineStore('authStore', () => {
 
   function setUser(userData) {
     user.value = userData
+    
+    // Persist user data including role in localStorage
+    if (typeof window !== 'undefined' && userData) {
+      localStorage.setItem('user_info', JSON.stringify(userData))
+    }
   }
 
   return {

@@ -305,6 +305,79 @@ export const usePublications = () => {
     error.value = null
   }
 
+  // ===== ASSOCIAR TAGS =====
+  const associateTags = async (postId: number, tagIds: number[]) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const token = getAuthToken()
+      const api = getApiBase()
+
+      const response = await $fetch(`${api}/posts/${postId}/tags`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: { tags: tagIds }
+      })
+
+      // Update local publication if it exists in the list
+      const index = publications.value.findIndex(p => p.id === postId)
+      if (index !== -1 && response) {
+        publications.value[index] = normalizePublication(response)
+      }
+
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Failed to associate tags'
+      console.error('Error associating tags:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ===== DESASSOCIAR TAGS =====
+  const disassociateTags = async (postId: number, tagIds: number[]) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const token = getAuthToken()
+      const api = getApiBase()
+
+      const response = await $fetch(`${api}/posts/${postId}/tags`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: { tags: tagIds }
+      })
+
+      // Update local publication if it exists in the list
+      const index = publications.value.findIndex(p => p.id === postId)
+      if (index !== -1 && response) {
+        publications.value[index] = normalizePublication(response)
+      }
+
+      return response
+    } catch (e: any) {
+      // Check for permission error
+      if (e.status === 403 || e.status === 401) {
+        error.value = 'You don\'t have permission to remove tags'
+      } else {
+        error.value = e.data?.message || 'Failed to remove tags'
+      }
+      console.error('Error disassociating tags:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     publications,
     loading,
@@ -316,6 +389,8 @@ export const usePublications = () => {
     togglePublicationVisibility,
     ratePublication,
     updateSummary,
+    associateTags,
+    disassociateTags,
     clearPublications
   }
 }
