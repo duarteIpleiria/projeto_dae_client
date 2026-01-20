@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import ManageTagsModal from './ManageTagsModal.vue'
 
 interface Comment {
   id: number
@@ -50,6 +51,7 @@ const emit = defineEmits<{
   'toggle-visibility': [publicationId: number, currentVisibility: boolean]
   'rate': [publication: Publication]
   'edit-summary': [publication: Publication]
+  'tags-updated': [publication: Publication]
 }>()
 
 const isAuthor = computed((): boolean => {
@@ -60,6 +62,7 @@ const isAuthor = computed((): boolean => {
 const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
+const manageTagsModalOpen = ref(false)
 
 const toast = useToast()
 const config = useRuntimeConfig()
@@ -179,6 +182,14 @@ watch(
     visibilityState.value = !!val
   }
 )
+
+const handleTagsUpdated = (updatedPublication: Publication) => {
+  // Update local tags
+  if (updatedPublication.tags) {
+    props.publication.tags = updatedPublication.tags
+  }
+  emit('tags-updated', updatedPublication)
+}
 </script>
 
 <template>
@@ -244,6 +255,9 @@ watch(
       <div class="flex items-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
+
+        <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
+          @click="manageTagsModalOpen = true" />
 
         <UButton v-if="!isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
           @click="$emit('rate', publication)" />
@@ -390,5 +404,12 @@ watch(
         />
       </div>
     </div>
+
+    <!-- Manage Tags Modal -->
+    <ManageTagsModal
+      v-model="manageTagsModalOpen"
+      :publication="publication"
+      @tags-updated="handleTagsUpdated"
+    />
   </UCard>
 </template>
