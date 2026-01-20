@@ -14,7 +14,8 @@ export const usePublications = () => {
     ...p,
     average_rating: p?.average_rating ?? p?.averageRating ?? 0,
     ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
-    is_visible: p?.is_visible ?? p?.visible ?? false
+    is_visible: p?.is_visible ?? p?.visible ?? false,
+    comments: p?.comments || []
   })
 
   const publications = ref<any[]>([])
@@ -36,6 +37,8 @@ export const usePublications = () => {
       const api = getApiBase()
 
       const params = new URLSearchParams()
+
+      console.log(filters)
       if (filters?.page) params.append('page', filters.page.toString())
       if (filters?.limit) params.append('limit', filters.limit.toString())
       if (filters?.is_visible !== undefined) params.append('is_visible', filters.is_visible.toString())
@@ -47,9 +50,15 @@ export const usePublications = () => {
         }
       })
 
-      publications.value = Array.isArray(response)
-        ? response.map(normalizePublication)
+      console.log('Response da API:', response)
+
+      // A API retorna { data: [...], total?: X } ou apenas [...]
+      const data = Array.isArray(response) ? response : ((response as any)?.data || [])
+      publications.value = Array.isArray(data)
+        ? data.map(normalizePublication)
         : []
+      
+      // Retorna a resposta completa para que a página acesse o total
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao carregar publicações'
@@ -100,14 +109,12 @@ export const usePublications = () => {
 
   // ===== PESQUISAR PUBLICAÇÕES =====
   const searchPublications = async (searchFilters: {
-    title?: string
-    author_id?: number
-    scientific_area?: string
+
     page?: number
     limit?: number
-    //tags?: number[]
-    //date_from?: string
-    //date_to?: string
+    isVisible?: boolean
+    tag?: number
+
   }) => {
     loading.value = true
     error.value = null
@@ -125,7 +132,9 @@ export const usePublications = () => {
         body: searchFilters
       })
 
-      publications.value = Array.isArray(response)? response.map(normalizePublication): []
+      console.log('Search response:', response)
+      const data = Array.isArray(response) ? response : ((response as any)?.data || [])
+      publications.value = Array.isArray(data) ? data.map(normalizePublication) : []
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao pesquisar publicações'
@@ -159,7 +168,7 @@ export const usePublications = () => {
 
       publications.value = Array.isArray(response)
         ? response.map(normalizePublication)
-        : []
+        : ((response as any)?.data && Array.isArray((response as any).data) ? (response as any).data.map(normalizePublication) : [])
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao ordenar publicações'
@@ -185,7 +194,7 @@ export const usePublications = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: visible
+        body: JSON.stringify({ is_visible: visible })
       })
 
       // Atualizar na lista local
@@ -194,8 +203,8 @@ export const usePublications = () => {
         publications.value[index] = normalizePublication({
           ...publications.value[index],
           ...(response || {}),
-          is_visible: response?.is_visible ?? visible,
-          visible: response?.visible ?? visible
+          is_visible: (response as any)?.is_visible ?? visible,
+          visible: (response as any)?.visible ?? visible
         })
       }
 
@@ -235,8 +244,8 @@ export const usePublications = () => {
         publications.value[index] = normalizePublication({
           ...publications.value[index],
           ...(response || {}),
-          average_rating: response?.average_rating ?? response?.averageRating ?? publications.value[index].average_rating,
-          ratings_count: response?.ratings_count ?? response?.ratingsCount ?? publications.value[index].ratings_count
+          average_rating: (response as any)?.average_rating ?? (response as any)?.averageRating ?? publications.value[index].average_rating,
+          ratings_count: (response as any)?.ratings_count ?? (response as any)?.ratingsCount ?? publications.value[index].ratings_count
         })
       }
 
@@ -276,7 +285,7 @@ export const usePublications = () => {
         publications.value[index] = normalizePublication({
           ...publications.value[index],
           ...(response || {}),
-          summary: response?.summary ?? summary
+          summary: (response as any)?.summary ?? summary
         })
       }
 
