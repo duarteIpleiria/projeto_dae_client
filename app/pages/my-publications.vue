@@ -32,8 +32,6 @@ const selectedPublicationForEdit = ref<any>(null)
 const searchQuery = ref('')
 const selectedFilter = ref<'all' | 'visible' | 'hidden'>('all')
 const selectedTag = ref<number | null>(null)
-const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count'>('average_rating')
-const sortOrder = ref<'asc' | 'desc'>('desc')
 
 const tags = ref<any[]>([])
 const tagsLoading = ref(false)
@@ -74,44 +72,23 @@ const loadTags = async () => {
 // ===== CARREGAR PUBLICAÇÕES =====
 const loadPublications = async () => {
   try {
-    console.log('Carregando todas as publicações com filtros:', {
+    console.log('Carregando publicações com filtros:', {
       page: currentPage.value,
       limit: itemsPerPage.value,
       visibility: selectedFilter.value,
-      tag: selectedTag.value,
-      sortBy: sortBy.value,
-      sortOrder: sortOrder.value
+      tag: selectedTag.value
     })
 
-    const config = useRuntimeConfig()
-    const api = config.public.apiBase
-    const token = authStore.token
+    const isVisibleFilter = selectedFilter.value === 'visible' ? true : selectedFilter.value === 'hidden' ? false : undefined
 
-    const response = await $fetch(`${api}/posts/sort`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: {
-        sort_by: sortBy.value,
-        order: sortOrder.value
-      }
+    const response = await fetchUserPublications({
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      is_visible: isVisibleFilter,
+      tag: selectedTag.value || undefined
     }) as any
 
     console.log('Resposta completa:', response)
-
-    // Processar dados
-    const data = Array.isArray(response) ? response : (response?.data || [])
-    
-    // Normalizar publicações
-    publications.value = data.map((p: any) => ({
-      ...p,
-      average_rating: p?.average_rating ?? p?.averageRating ?? 0,
-      ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
-      is_visible: p?.is_visible ?? p?.visible ?? false,
-      comments: p?.comments || []
-    }))
 
     // Se a API retorna { data: [...], total: X }
     if (response?.total !== undefined) {
@@ -140,18 +117,6 @@ watch(selectedFilter, async (newFilter) => {
 
 watch(selectedTag, async (newTag) => {
   console.log('🔔 Tag mudou para:', newTag)
-  currentPage.value = 1
-  await loadPublications()
-})
-
-watch(sortBy, async (newSort) => {
-  console.log('🔔 Ordenação mudou para:', newSort)
-  currentPage.value = 1
-  await loadPublications()
-})
-
-watch(sortOrder, async (newOrder) => {
-  console.log('🔔 Ordem mudou para:', newOrder)
   currentPage.value = 1
   await loadPublications()
 })
@@ -281,30 +246,6 @@ onMounted(() => {
             clearable
           />
         </div>
-
-        <!-- Ordenação -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <!-- Ordenar por -->
-          <USelect 
-            v-model="sortBy" 
-            :items="[
-              { value: 'average_rating', label: 'Melhor Avaliado' },
-              { value: 'ratings_count', label: 'Mais Avaliado' },
-              { value: 'comments_count', label: 'Mais Comentado' }
-            ]" 
-            placeholder="Ordenar por"
-          />
-
-          <!-- Ordem -->
-          <USelect 
-            v-model="sortOrder" 
-            :items="[
-              { value: 'desc', label: 'Descendente' },
-              { value: 'asc', label: 'Ascendente' }
-            ]" 
-            placeholder="Ordem"
-          />
-        </div>
       </div>
       <!-- Loading -->
       <div v-if="loading" class="flex justify-center items-center py-16">
@@ -320,7 +261,7 @@ onMounted(() => {
       <!-- Lista -->
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
-          :current-user-id="(user as any)?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
+          :current-user-id="user?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
           @edit-summary="handleEditSummary" />
       </div>
 
@@ -340,7 +281,7 @@ onMounted(() => {
   <!-- Modais -->
   <PublicationsAddModal v-model="showAddModal" @publication-created="handlePublicationCreated" />
 
-  <PublicationsRateModal v-model="showRateModal" :publication="selectedPublicationForRating" :current-user-id="(user as any)?.id || 0"
+  <PublicationsRateModal v-model="showRateModal" :publication="selectedPublicationForRating" :current-user-id="user?.id || 0"
     @rating-submitted="handleRatingSubmitted" />
 
   <PublicationsEditModal v-model="showEditModal" :publication="selectedPublicationForEdit"

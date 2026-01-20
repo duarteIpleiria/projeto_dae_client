@@ -189,8 +189,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <UButton label="Cancelar" color="secondary" variant="ghost" type="button" @click="open = false" />
-          <UButton label="Criar" color="primary" type="submit" :loading="loading" />
+          <UButton label="Cancelar" color="gray" variant="ghost" type="button" @click="open = false" />
+          <UButton label="Editar" color="primary" type="submit" :loading="loading" />
         </div>
       </UForm>
     </template>

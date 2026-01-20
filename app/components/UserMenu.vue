@@ -43,18 +43,24 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
   label: userLocal.value.name,
   avatar: userLocal.value.avatar
-}], [{
-  label: 'Profile',
-  icon: 'i-lucide-user',
-  to: '/profile'
-}, {
-  label: 'Log out',
-  icon: 'i-lucide-log-out',
-  onSelect(e) {
-    e.preventDefault()
-    handleLogout()
-  }
-}]]))
+}], [
+  {
+    label: 'My Publications',
+    icon: 'i-lucide-user',
+    to: '/my-publications'
+  },
+  {
+    label: 'Profile',
+    icon: 'i-lucide-user',
+    to: '/profile'
+  }, {
+    label: 'Log out',
+    icon: 'i-lucide-log-out',
+    onSelect(e) {
+      e.preventDefault()
+      handleLogout()
+    }
+  }]]))
 </script>
 
 <template>
@@ -65,8 +71,8 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       label: collapsed ? undefined : userLocal?.name,
       trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
     }" color="neutral" variant="ghost" block :square="collapsed" class="data-[state=open]:bg-elevated" :ui="{
-        trailingIcon: 'text-dimmed'
-      }" />
+      trailingIcon: 'text-dimmed'
+    }" />
 
     <template #chip-leading="{ item }">
       <div class="inline-flex items-center justify-center shrink-0 size-5">
