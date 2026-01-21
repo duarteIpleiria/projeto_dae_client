@@ -38,6 +38,16 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 const tags = ref<any[]>([])
 const tagsLoading = ref(false)
 
+// Check if user can see hidden tags
+const canSeeHiddenTags = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
+// Filter tags for dropdown (exclude hidden tags for non-admin users)
+const visibleTagsForFilter = computed(() => {
+  return tags.value.filter((tag: any) => canSeeHiddenTags.value || tag.visible !== false)
+})
+
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const totalItems = ref(0)
@@ -296,7 +306,7 @@ onMounted(() => {
             v-model="selectedTag" 
             :items="[
               { value: null, label: 'Todas as tags' },
-              ...tags.map(tag => ({ value: tag.id, label: tag.name }))
+              ...visibleTagsForFilter.map(tag => ({ value: tag.id, label: tag.name }))
             ]"
             placeholder="Filtrar por tag"
             :loading="tagsLoading"

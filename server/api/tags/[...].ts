@@ -69,6 +69,33 @@ export default defineEventHandler(async (event) => {
     }
 
     if (method === 'PUT') {
+      // Check if this is a visibility toggle endpoint
+      const endpoint = event.context.params?._
+      
+      if (endpoint?.includes('/visibility')) {
+        const tagId = endpoint.split('/')[0]
+        
+        if (!tagId) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'Tag ID parameter is required'
+          })
+        }
+
+        const body = await readBody(event)
+        
+        const response = await $fetch(`${apiBase}/tags/${tagId}/visibility`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          },
+          body: body
+        })
+
+        return response
+      }
+
       // Update a tag
       const tagId = event.context.params?._
       
