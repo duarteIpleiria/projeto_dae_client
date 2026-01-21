@@ -46,8 +46,13 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
 }], [
   {
     label: 'My Publications',
-    icon: 'i-lucide-user',
+    icon: 'i-lucide-book-open',
     to: '/my-publications'
+  },
+  {
+    label: 'Activity History',
+    icon: 'i-lucide-activity',
+    to: '/activity'
   },
   {
     label: 'Profile',

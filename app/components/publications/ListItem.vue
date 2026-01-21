@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '~/stores/auth-store'
 import ManageTagsModal from './ManageTagsModal.vue'
+import HistoryModal from './HistoryModal.vue'
+
 
 interface Comment {
   id: number
@@ -35,7 +38,7 @@ interface Publication {
   ratings_count?: number
   comments_count?: number
   comments?: Comment[]
-  tags: Array<{ id: number; name: string }>
+  tags: Array<{ id: number; name: string; visible?: boolean }>
   createdAt: number | string
   updatedAt: number | string | null
 }
@@ -54,6 +57,18 @@ const emit = defineEmits<{
   'tags-updated': [publication: Publication]
 }>()
 
+const authStore = useAuthStore()
+
+// Check if user can see hidden tags
+const canSeeHiddenTags = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
+// Filter tags to display (exclude hidden tags for non-admin users)
+const visibleTags = computed(() => {
+  return props.publication.tags.filter(tag => canSeeHiddenTags.value || tag.visible !== false)
+})
+
 const isAuthor = computed((): boolean => {
   return !!props.currentUserId &&
     props.publication.author.id === props.currentUserId
@@ -63,6 +78,7 @@ const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
 const manageTagsModalOpen = ref(false)
+const showHistoryModal = ref(false)
 
 const toast = useToast()
 const config = useRuntimeConfig()
@@ -190,6 +206,7 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
   }
   emit('tags-updated', updatedPublication)
 }
+
 </script>
 
 <template>
@@ -231,8 +248,8 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       </div>
 
       <!-- Tags -->
-      <div v-if="publication.tags.length" class="flex flex-wrap gap-2">
-        <UBadge v-for="tag in publication.tags" :key="tag.id" variant="outline"
+      <div v-if="visibleTags.length" class="flex flex-wrap gap-2">
+        <UBadge v-for="tag in visibleTags" :key="tag.id" variant="outline"
           class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
           {{ tag.name }}
         </UBadge>
@@ -255,6 +272,11 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       <div class="flex items-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
+
+        <UButton v-if="isAuthor"
+          color="secondary" variant="ghost" size="sm"
+          icon="i-lucide-history" label="Histórico"
+          @click="showHistoryModal = true" />
 
         <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
           @click="manageTagsModalOpen = true" />
@@ -410,6 +432,12 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       v-model="manageTagsModalOpen"
       :publication="publication"
       @tags-updated="handleTagsUpdated"
+    />
+
+    <!-- History Modal -->
+    <HistoryModal
+      v-model="showHistoryModal"
+      :publication-id="publication.id"
     />
   </UCard>
 </template>
