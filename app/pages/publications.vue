@@ -201,7 +201,9 @@ const handleRatingSubmitted = async () => {
 
 // ===== ABRIR MODAL DE EDITAR RESUMO =====
 const handleEditSummary = (publication: any) => {
-  console.log(publication)
+  console.log('📝 Publicação selecionada para editar:', publication)
+  console.log('📝 Área científica:', publication.scientific_area)
+  console.log('📝 ScientificArea:', publication.scientificArea)
   selectedPublicationForEdit.value = publication
   showEditModal.value = true
 }
@@ -344,5 +346,6 @@ onMounted(() => {
     @rating-submitted="handleRatingSubmitted" />
 
   <PublicationsEditModal v-model="showEditModal" :publication="selectedPublicationForEdit"
-    @publication-updated="handleEditModal" />
+    @publication-updated="handleEditModal" 
+    @file-removed="loadPublications" />
 </template>
