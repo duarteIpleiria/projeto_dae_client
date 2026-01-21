@@ -7,20 +7,21 @@ const token = authStore.token;
 const config = useRuntimeConfig()
 const api = config.public.apiBase
 
-import type { TableColumn } from '@nuxt/ui'
-import { getPaginationRowModel } from '@tanstack/table-core'
-import type { Row } from '@tanstack/table-core'
 import type { Tag } from '~/types'
 
-const UButton = resolveComponent('UButton')
-const UDropdownMenu = resolveComponent('UDropdownMenu')
-
 const toast = useToast()
-const table = useTemplateRef('table')
 
 const selectedTag = ref<Tag | null>(null)
 
+// Fetch all tags
 const { data, error, refresh, status } = useFetch(`${api}/tags`, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
+
+// Fetch user data with subscribed tags
+const { data: userData, refresh: refreshUser } = await useFetch(`${api}/auth/user`, {
   headers: {
     Authorization: `Bearer ${token}`,
   },
@@ -28,150 +29,407 @@ const { data, error, refresh, status } = useFetch(`${api}/tags`, {
 
 const tags = computed(() => (data.value as any) || []);
 
-async function subscribeToTag(tag: Tag) {
-  const { data, error } = await useFetch(`${api}/tags/${tag.id}/subscribe`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({})
-  })
+// Local state for optimistic updates - initialize immediately from userData
+const getInitialSubscribedIds = () => {
+  const user = userData.value as any
+  if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
+    return user.subscribedTags.map((tag: Tag) => tag.id)
+  }
+  return []
+}
 
-  if (error.value) {
+const localSubscribedTagIds = ref<number[]>(getInitialSubscribedIds())
+
+// Watch for server updates and sync
+watch(userData, (newData) => {
+  const user = newData as any
+  if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
+    localSubscribedTagIds.value = user.subscribedTags.map((tag: Tag) => tag.id)
+  }
+}, { immediate: true })
+
+// Get subscribed tag IDs (using local state for instant updates)
+const subscribedTagIds = computed(() => {
+  return localSubscribedTagIds.value
+})
+
+// Separate subscribed and unsubscribed tags
+const subscribedTags = computed(() => {
+  return tags.value.filter((tag: Tag) => subscribedTagIds.value.includes(tag.id))
+})
+
+const unsubscribedTags = computed(() => {
+  return tags.value.filter((tag: Tag) => !subscribedTagIds.value.includes(tag.id))
+})
+
+// Search query for available tags
+const searchQuery = ref('')
+
+// Drag and drop state
+const isDraggingOver = ref(false)
+const draggedTag = ref<Tag | null>(null)
+
+// Loading states
+const loadingTagIds = ref<Set<number>>(new Set())
+
+// Hover states for remove buttons
+const hoveredTagId = ref<number | null>(null)
+
+// Filtered unsubscribed tags based on search
+const filteredUnsubscribedTags = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return unsubscribedTags.value
+  }
+  const query = searchQuery.value.toLowerCase().trim()
+  return unsubscribedTags.value.filter((tag: Tag) => 
+    tag.name.toLowerCase().includes(query)
+  )
+})
+
+// Drag and drop handlers
+function handleDragStart(tag: Tag, event: DragEvent) {
+  draggedTag.value = tag
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', tag.id.toString())
+  }
+}
+
+function handleDragEnd() {
+  draggedTag.value = null
+  isDraggingOver.value = false
+}
+
+function handleDragOver(event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  isDraggingOver.value = true
+}
+
+function handleDragLeave() {
+  isDraggingOver.value = false
+}
+
+async function handleDrop(event: DragEvent) {
+  event.preventDefault()
+  isDraggingOver.value = false
+  
+  if (draggedTag.value) {
+    await subscribeToTag(draggedTag.value)
+    draggedTag.value = null
+  }
+}
+
+async function subscribeToTag(tag: Tag) {
+  // Check if already subscribed
+  if (localSubscribedTagIds.value.includes(tag.id)) {
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao subscrever a tag',
-      color: 'error'
+      title: 'Já subscrito',
+      description: `Já está subscrito à tag "${tag.name}"`,
+      color: 'yellow',
+      icon: 'i-lucide-info',
+      timeout: 3000
     })
     return
   }
 
-  toast.add({
-    title: 'Sucesso',
-    description: 'Tag subscrita com sucesso',
-    color: 'success'
-  })
+  loadingTagIds.value.add(tag.id)
+  
+  // Optimistic update - add tag ID immediately
+  localSubscribedTagIds.value = [...localSubscribedTagIds.value, tag.id]
+  
+  try {
+    await $fetch(`${api}/tags/${tag.id}/subscribe`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
 
-  refresh()
-}
+    toast.add({
+      title: 'Tag subscrita!',
+      description: `Subscreveu "${tag.name}" com sucesso. Receberá notificações sobre publicações relacionadas.`,
+      color: 'success',
+      icon: 'i-lucide-bell-ring',
+      timeout: 4000
+    })
 
-function getRowItems(row: Row<Tag>) {
-  return [
-    {
-      type: 'label',
-      label: 'Actions'
-    },
-    {
-      label: 'Subscribe',
-      icon: 'i-lucide-bell-plus',
-      onSelect() {
-        subscribeToTag(row.original)
-      }
-    },
-    {
-      label: 'Copy tag ID',
-      icon: 'i-lucide-copy',
-      onSelect() {
-        navigator.clipboard.writeText(row.original.id.toString())
-        toast.add({
-          title: 'Copied to clipboard',
-          description: 'Tag ID copied to clipboard'
-        })
-      }
-    },
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Delete tag',
-      icon: 'i-lucide-trash',
-      color: 'error',
-      onSelect() {
-        selectedTag.value = row.original
-      }
+    // Refresh data to sync with server
+    await Promise.all([refresh(), refreshUser()])
+  } catch (error: any) {
+    console.error('Error subscribing to tag:', error)
+    console.error('Error status:', error.status)
+    console.error('Error data:', error.data)
+    
+    // Rollback optimistic update on error
+    localSubscribedTagIds.value = localSubscribedTagIds.value.filter(id => id !== tag.id)
+    
+    // Check if error is "already subscribed"
+    const errorMessage = typeof error.data === 'string' ? error.data : error.data?.message || ''
+    const isAlreadySubscribed = errorMessage.includes('já subscrita') || 
+                                errorMessage.includes('already subscribed') ||
+                                errorMessage.includes('MyEntityConflictException')
+    
+    if (isAlreadySubscribed) {
+      console.log('Tag already subscribed on server, keeping it subscribed locally')
+      // Keep it subscribed if server says it already is
+      localSubscribedTagIds.value = [...localSubscribedTagIds.value, tag.id]
+      
+      // Force refresh to sync with server
+      await Promise.all([refresh(), refreshUser()])
+      
+      toast.add({
+        title: 'Já subscrito',
+        description: `Já está subscrito à tag "${tag.name}"`,
+        color: 'yellow',
+        icon: 'i-lucide-info',
+        timeout: 3000
+      })
+    } else {
+      toast.add({
+        title: 'Erro ao subscrever',
+        description: error.data?.message || 'Não foi possível subscrever a tag',
+        color: 'error',
+        icon: 'i-lucide-alert-circle',
+        timeout: 5000
+      })
     }
-  ]
+  } finally {
+    loadingTagIds.value.delete(tag.id)
+  }
 }
 
-const columns: TableColumn<Tag>[] = [
-  {
-    accessorKey: 'id',
-    header: 'ID'
-  },
+async function unsubscribeFromTag(tag: Tag) {
+  loadingTagIds.value.add(tag.id)
+  
+  // Optimistic update - remove tag ID immediately
+  const previousIds = [...localSubscribedTagIds.value]
+  localSubscribedTagIds.value = localSubscribedTagIds.value.filter(id => id !== tag.id)
+  
+  try {
+    await $fetch(`${api}/tags/${tag.id}/subscribe`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
 
-  {
-    accessorKey: 'name',
-    header: 'Name'
-  },
+    toast.add({
+      title: 'Subscrição removida',
+      description: `Deixou de subscrever "${tag.name}"`,
+      color: 'success',
+      icon: 'i-lucide-bell-off',
+      timeout: 3000
+    })
 
-  {
-    id: 'actions',
-    cell: ({ row }) =>
-      h(
-        UDropdownMenu,
-        {
-          content: { align: 'end' },
-          items: getRowItems(row)
-        },
-        () =>
-          h(UButton, {
-            icon: 'i-lucide-ellipsis-vertical',
-            color: 'neutral',
-            variant: 'ghost'
-          })
-      )
+    // Refresh data to sync with server
+    await Promise.all([refresh(), refreshUser()])
+  } catch (error: any) {
+    console.error('Error unsubscribing from tag:', error)
+    
+    // Rollback optimistic update on error
+    localSubscribedTagIds.value = previousIds
+    
+    toast.add({
+      title: 'Erro ao cancelar subscrição',
+      description: error.data?.message || 'Não foi possível cancelar a subscrição',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+      timeout: 5000
+    })
+  } finally {
+    loadingTagIds.value.delete(tag.id)
   }
-]
+}
 
-const name = computed({
-  get: (): string => {
-    return (table.value?.tableApi?.getColumn('name')?.getFilterValue() as string) || ''
-  },
-  set: (value: string) => {
-    table.value?.tableApi?.getColumn('name')?.setFilterValue(value || undefined)
-  }
-})
-
-const pagination = ref({
-  pageIndex: 0,
-  pageSize: 10
-})
 </script>
 
 <template>
   <UDashboardPanel id="tags">
     <template #header>
-      <UDashboardNavbar title="Tags">
+      <UDashboardNavbar title="Gestão de Tags">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <TagsAddModal @created="refresh" />
+          <TagsAddModal @created="() => { refresh(); refreshUser(); }" />
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
-      <div class="flex flex-wrap items-center justify-between gap-1.5">
-        <UInput v-model="name" class="max-w-sm" icon="i-lucide-search" placeholder="Filter..." />
+      <!-- Sticky subscribed tags bar -->
+      <div 
+        class="sticky top-0 z-10 bg-background border-b border-default mb-6"
+        :class="{ 'border-2 border-primary-500 border-dashed': isDraggingOver }"
+        @dragover="handleDragOver"
+        @dragleave="handleDragLeave"
+        @drop="handleDrop"
+      >
+        <div class="p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <UIcon name="i-lucide-bookmark-check" class="text-primary size-5" />
+            <h3 class="text-sm font-semibold">Tags Subscritas</h3>
+            <UBadge color="primary" variant="subtle" size="xs">{{ subscribedTags.length }}</UBadge>
+          </div>
+
+          <!-- Subscribed tags -->
+          <div v-if="subscribedTags.length > 0" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+            <div
+              v-for="tag in subscribedTags"
+              :key="tag.id"
+              class="relative group"
+              @mouseenter="hoveredTagId = tag.id"
+              @mouseleave="hoveredTagId = null"
+            >
+              <UBadge 
+                :label="tag.name" 
+                color="primary"
+                variant="solid"
+                size="md"
+                class="pr-8 cursor-default transition-all"
+                :class="{ 'opacity-50': loadingTagIds.has(tag.id) }"
+              />
+              <UButton
+                v-if="hoveredTagId === tag.id && !loadingTagIds.has(tag.id)"
+                icon="i-lucide-x"
+                color="neutral"
+                variant="ghost"
+                size="2xs"
+                class="absolute right-1 top-1/2 -translate-y-1/2 hover:bg-error-500 hover:text-white"
+                @click="unsubscribeFromTag(tag)"
+                :aria-label="`Remover subscrição de ${tag.name}`"
+              />
+              <UIcon 
+                v-if="loadingTagIds.has(tag.id)"
+                name="i-lucide-loader-2" 
+                class="absolute right-2 top-1/2 -translate-y-1/2 animate-spin size-3"
+              />
+            </div>
+          </div>
+
+          <!-- Empty state for subscribed tags -->
+          <div v-else class="flex flex-col items-center justify-center py-8 text-center">
+            <UIcon name="i-lucide-inbox" class="size-12 text-muted mb-3" />
+            <p class="text-sm text-muted">Nenhuma tag subscrita</p>
+            <p class="text-xs text-muted mt-1">Adicione tags abaixo clicando ou arrastando para esta área</p>
+          </div>
+
+          <!-- Drop zone indicator when dragging -->
+          <div 
+            v-if="isDraggingOver && draggedTag" 
+            class="mt-3 p-3 border-2 border-dashed border-primary-500 rounded-md bg-primary-50 dark:bg-primary-950/20 flex items-center justify-center gap-2"
+          >
+            <UIcon name="i-lucide-arrow-down" class="size-4 text-primary animate-bounce" />
+            <span class="text-sm text-primary font-medium">Solte para subscrever "{{ draggedTag.name }}"</span>
+          </div>
+        </div>
       </div>
 
-      <UTable v-if="status === 'success'" ref="table" :data="tags" :columns="columns"
-        v-model:pagination="pagination"
-        :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" />
-
-      <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
-        <div class="text-sm text-muted">
-          Total: {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} tags
+      <!-- Available tags section -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-tags" class="text-muted size-5" />
+            <h3 class="text-sm font-semibold">Tags Disponíveis</h3>
+            <UBadge color="neutral" variant="subtle" size="xs">{{ unsubscribedTags.length }}</UBadge>
+          </div>
+          <UInput 
+            v-model="searchQuery" 
+            icon="i-lucide-search" 
+            placeholder="Procurar tags..." 
+            class="max-w-xs"
+          />
         </div>
 
-        <div class="flex items-center gap-1.5">
-          <UPagination :default-page="(table?.tableApi?.getState().pagination.pageIndex || 0) + 1"
-            :items-per-page="table?.tableApi?.getState().pagination.pageSize"
-            :total="table?.tableApi?.getFilteredRowModel().rows.length"
-            @update:page="(p: number) => table?.tableApi?.setPageIndex(p - 1)" />
+        <!-- Available tags grid -->
+        <div v-if="filteredUnsubscribedTags.length > 0" class="flex flex-wrap gap-2">
+          <UBadge
+            v-for="tag in filteredUnsubscribedTags"
+            :key="tag.id"
+            :label="tag.name"
+            color="neutral"
+            variant="outline"
+            size="md"
+            :draggable="!loadingTagIds.has(tag.id)"
+            class="cursor-pointer hover:bg-primary-50 hover:border-primary-300 dark:hover:bg-primary-950/20 transition-all group"
+            :class="{ 
+              'opacity-50 cursor-wait': loadingTagIds.has(tag.id),
+              'cursor-move': !loadingTagIds.has(tag.id)
+            }"
+            @click="!loadingTagIds.has(tag.id) && subscribeToTag(tag)"
+            @dragstart="handleDragStart(tag, $event)"
+            @dragend="handleDragEnd"
+          >
+            <template #leading>
+              <UIcon 
+                v-if="loadingTagIds.has(tag.id)"
+                name="i-lucide-loader-2" 
+                class="animate-spin"
+              />
+              <UIcon 
+                v-else
+                name="i-lucide-plus" 
+                class="group-hover:scale-110 transition-transform"
+              />
+            </template>
+          </UBadge>
+        </div>
+
+        <!-- Empty state for filtered tags -->
+        <div v-else-if="searchQuery && unsubscribedTags.length > 0" class="flex flex-col items-center justify-center py-12 text-center">
+          <UIcon name="i-lucide-search-x" class="size-12 text-muted mb-3" />
+          <p class="text-sm text-muted">Nenhuma tag encontrada para "{{ searchQuery }}"</p>
+          <UButton 
+            label="Limpar pesquisa" 
+            variant="ghost" 
+            size="xs" 
+            class="mt-2"
+            @click="searchQuery = ''"
+          />
+        </div>
+
+        <!-- Empty state when all tags are subscribed -->
+        <div v-else-if="unsubscribedTags.length === 0 && tags.length > 0" class="flex flex-col items-center justify-center py-12 text-center">
+          <UIcon name="i-lucide-check-circle-2" class="size-12 text-success mb-3" />
+          <p class="text-sm font-medium">Todas as tags já estão subscritas!</p>
+          <p class="text-xs text-muted mt-1">Não há mais tags disponíveis para subscrever</p>
+        </div>
+
+        <!-- Empty state when no tags exist -->
+        <div v-else-if="tags.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
+          <UIcon name="i-lucide-inbox" class="size-12 text-muted mb-3" />
+          <p class="text-sm text-muted">Nenhuma tag disponível</p>
+          <p class="text-xs text-muted mt-1">Crie a primeira tag usando o botão acima</p>
+        </div>
+
+        <!-- Info panel -->
+        <div class="mt-6 p-4 bg-muted/30 rounded-lg border border-default">
+          <div class="flex gap-3">
+            <UIcon name="i-lucide-info" class="size-5 text-primary flex-shrink-0 mt-0.5" />
+            <div class="text-sm space-y-1">
+              <p class="font-medium">Como subscrever tags:</p>
+              <ul class="text-muted space-y-1 list-disc list-inside">
+                <li><strong>Clique</strong> numa tag disponível para a subscrever</li>
+                <li><strong>Arraste</strong> uma tag para a área de tags subscritas</li>
+                <li><strong>Passe o rato</strong> sobre uma tag subscrita para ver o botão de remover</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats footer -->
+        <div class="flex items-center justify-between text-xs text-muted pt-4 border-t border-default">
+          <div>
+            Total: <strong>{{ tags.length }}</strong> tags
+          </div>
+          <div>
+            Subscritas: <strong class="text-primary">{{ subscribedTags.length }}</strong> | 
+            Disponíveis: <strong>{{ unsubscribedTags.length }}</strong>
+          </div>
         </div>
       </div>
     </template>
@@ -181,6 +439,7 @@ const pagination = ref({
     :tag="selectedTag"
     @deleted="() => {
       refresh()
+      refreshUser()
       selectedTag = null
     }"
     @close="() => {
