@@ -73,6 +73,9 @@ const loadTags = async () => {
 
 // ===== CARREGAR PUBLICAÇÕES =====
 const loadPublications = async () => {
+  if (!loading.value) {
+    loading.value = true
+  }
   try {
     console.log('Carregando todas as publicações com filtros:', {
       page: currentPage.value,
@@ -151,6 +154,8 @@ const loadPublications = async () => {
       description: 'Falha ao carregar publicações',
       color: 'error'
     })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -248,10 +253,9 @@ const handlePublicationCreated = async () => {
 }
 
 // ===== INICIALIZAR =====
-onMounted(() => {
+onMounted(async () => {
   console.log('Componente montado, carregando publicações e tags...')
-  loadTags()
-  loadPublications()
+  await Promise.all([loadTags(), loadPublications()])
 })
 
 </script>
