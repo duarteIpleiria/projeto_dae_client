@@ -102,25 +102,48 @@ const loadPublications = async () => {
     console.log('Resposta completa:', response)
 
     // Processar dados
-    const data = Array.isArray(response) ? response : (response?.data || [])
+    let data = Array.isArray(response) ? response : (response?.data || [])
     
-    // Normalizar publicações
-    publications.value = data.map((p: any) => ({
-      ...p,
-      average_rating: p?.average_rating ?? p?.averageRating ?? 0,
-      ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
-      is_visible: p?.is_visible ?? p?.visible ?? false,
-      comments: p?.comments || []
-    }))
-
-    // Se a API retorna { data: [...], total: X }
-    if (response?.total !== undefined) {
-      totalItems.value = response.total
-    } else if (response?.data && typeof response.data === 'object' && response.data.total !== undefined) {
-      totalItems.value = response.data.total
+    // Aplicar filtro de visibilidade no frontend
+    if (selectedFilter.value !== 'all') {
+      data = data.filter((p: any) => {
+        const isVisible = p?.is_visible ?? p?.visible ?? false
+        return selectedFilter.value === 'visible' ? isVisible : !isVisible
+      })
     }
 
+    // Aplicar filtro de tag no frontend
+    if (selectedTag.value !== null) {
+      data = data.filter((p: any) => {
+        const publicationTags = p?.tags || []
+        return publicationTags.some((tag: any) => tag.id === selectedTag.value)
+      })
+    }
+    
+    // Normalizar publicações
+    publications.value = data.map((p: any) => {
+      const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
+      console.log(`Publicação ${p.id}: comments_count=${commentsCount}, raw:`, { 
+        comments_count: p?.comments_count, 
+        commentsCount: p?.commentsCount,
+        comments: p?.comments?.length 
+      })
+      
+      return {
+        ...p,
+        average_rating: p?.average_rating ?? p?.averageRating ?? 0,
+        ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
+        comments_count: commentsCount,
+        is_visible: p?.is_visible ?? p?.visible ?? false,
+        comments: p?.comments || []
+      }
+    })
+
+    // Atualizar total
+    totalItems.value = publications.value.length
+
     console.log('Total de itens:', totalItems.value)
+    console.log('Publicações carregadas:', publications.value.length)
   } catch (error) {
     console.error('Erro ao carregar publicações:', error)
     toast.add({
