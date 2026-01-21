@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth-store'
 import ManageTagsModal from './ManageTagsModal.vue'
 import HistoryModal from './HistoryModal.vue'
-import { useAuthStore } from '~/stores/auth-store.js'
+
 
 interface Comment {
   id: number
