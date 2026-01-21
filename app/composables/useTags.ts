@@ -125,7 +125,7 @@ export const useTags = () => {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: { visible: visible }
+        body: { is_visible: visible }
       })
 
       // Update local tags array

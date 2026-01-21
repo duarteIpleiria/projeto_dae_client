@@ -365,8 +365,8 @@ async function unsubscribeFromTag(tag: Tag) {
 
     <template #body>
       <!-- Sticky bars: Subscribed and Hidden tags side by side -->
-      <div class="sticky top-0 z-10 bg-background border-b border-default mb-6 p-4">
-        <div v-if="canManageVisibility" class="grid grid-cols-2 gap-4">
+      <div class="sticky top-0 z-10 bg-background border-b border-default mb-6">
+        <div :class="canManageVisibility ? 'grid grid-cols-2 gap-4 p-4' : 'p-4'">
           <!-- Subscribed tags section -->
           <div
             :class="{ 
@@ -516,75 +516,6 @@ async function unsubscribeFromTag(tag: Tag) {
             >
               <UIcon name="i-lucide-arrow-down" class="size-4 text-amber-600 dark:text-amber-400 animate-bounce" />
               <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Solte para ocultar "{{ draggedTag.name }}"</span>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Non-admin users: single column view -->
-        <div v-else>
-          <div
-            :class="{ 
-              'border-2 border-primary-500 border-dashed rounded-md': isDraggingOver
-            }"
-            @dragover="handleDragOver"
-            @dragleave="handleDragLeave"
-            @drop="handleDrop"
-          >
-            <div class="flex items-center gap-2 mb-3">
-              <UIcon name="i-lucide-bookmark-check" class="text-primary size-5" />
-              <h3 class="text-sm font-semibold">Tags Subscritas</h3>
-              <UBadge color="primary" variant="subtle" size="xs">{{ subscribedTags.length }}</UBadge>
-            </div>
-
-            <!-- Subscribed tags -->
-            <div v-if="subscribedTags.length > 0" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
-              <div
-                v-for="tag in subscribedTags"
-                :key="tag.id"
-                class="relative group"
-                @mouseenter="hoveredTagId = tag.id"
-                @mouseleave="hoveredTagId = null"
-              >
-                <UBadge 
-                  :label="tag.name" 
-                  color="primary"
-                  variant="solid"
-                  size="md"
-                  class="pr-8 cursor-default transition-all"
-                  :class="{ 'opacity-50': loadingTagIds.has(tag.id) }"
-                />
-                <UButton
-                  v-if="hoveredTagId === tag.id && !loadingTagIds.has(tag.id)"
-                  icon="i-lucide-x"
-                  color="neutral"
-                  variant="ghost"
-                  size="2xs"
-                  class="absolute right-1 top-1/2 -translate-y-1/2 hover:bg-error-500 hover:text-white"
-                  @click="unsubscribeFromTag(tag)"
-                  :aria-label="`Remover subscrição de ${tag.name}`"
-                />
-                <UIcon 
-                  v-if="loadingTagIds.has(tag.id)"
-                  name="i-lucide-loader-2" 
-                  class="absolute right-2 top-1/2 -translate-y-1/2 animate-spin size-3"
-                />
-              </div>
-            </div>
-
-            <!-- Empty state for subscribed tags -->
-            <div v-else class="flex flex-col items-center justify-center py-8 text-center">
-              <UIcon name="i-lucide-inbox" class="size-12 text-muted mb-3" />
-              <p class="text-sm text-muted">Nenhuma tag subscrita</p>
-              <p class="text-xs text-muted mt-1">Adicione tags abaixo clicando ou arrastando para esta área</p>
-            </div>
-
-            <!-- Drop zone indicator when dragging -->
-            <div 
-              v-if="isDraggingOver && draggedTag" 
-              class="mt-3 p-3 border-2 border-dashed border-primary-500 rounded-md bg-primary-50 dark:bg-primary-950/20 flex items-center justify-center gap-2"
-            >
-              <UIcon name="i-lucide-arrow-down" class="size-4 text-primary animate-bounce" />
-              <span class="text-sm text-primary font-medium">Solte para subscrever "{{ draggedTag.name }}"</span>
             </div>
           </div>
         </div>
