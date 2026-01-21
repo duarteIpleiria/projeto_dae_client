@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { Publication, Tag } from '~/types'
+import { useAuthStore } from '~/stores/auth-store.js'
 
 interface Props {
   modelValue?: boolean
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   'tags-updated': [publication: Publication]
 }>()
 
+const authStore = useAuthStore()
+
 const open = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value)
@@ -29,19 +32,26 @@ const toast = useToast()
 const selectedTagIds = ref<number[]>([])
 const currentTags = ref<Tag[]>([])
 
+// Check if user can see hidden tags
+const canSeeHiddenTags = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
 // Load available tags when modal opens
 watch(open, async (isOpen) => {
   if (isOpen && props.publication) {
-    await fetchTags()
+    // Fetch tags with includeHidden parameter for admin users
+    await fetchTags(canSeeHiddenTags.value)
     currentTags.value = props.publication.tags || []
   }
 })
 
-// Transform tags for USelect - filter out already associated tags
+// Transform tags for USelect - filter out already associated tags and hidden tags (for non-admins)
 const tagOptions = computed(() => {
   const currentTagIds = currentTags.value.map(t => t.id)
   return availableTags.value
     .filter(tag => !currentTagIds.includes(tag.id))
+    .filter(tag => canSeeHiddenTags.value || tag.visible !== false)
     .map(tag => ({
       value: tag.id,
       label: tag.name

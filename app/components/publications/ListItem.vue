@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth-store'
 import ManageTagsModal from './ManageTagsModal.vue'
 import HistoryModal from './HistoryModal.vue'
+import { useAuthStore } from '~/stores/auth-store.js'
 
 interface Comment {
   id: number
@@ -37,7 +38,7 @@ interface Publication {
   ratings_count?: number
   comments_count?: number
   comments?: Comment[]
-  tags: Array<{ id: number; name: string }>
+  tags: Array<{ id: number; name: string; visible?: boolean }>
   createdAt: number | string
   updatedAt: number | string | null
 }
@@ -55,6 +56,18 @@ const emit = defineEmits<{
   'edit-summary': [publication: Publication]
   'tags-updated': [publication: Publication]
 }>()
+
+const authStore = useAuthStore()
+
+// Check if user can see hidden tags
+const canSeeHiddenTags = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
+// Filter tags to display (exclude hidden tags for non-admin users)
+const visibleTags = computed(() => {
+  return props.publication.tags.filter(tag => canSeeHiddenTags.value || tag.visible !== false)
+})
 
 const isAuthor = computed((): boolean => {
   return !!props.currentUserId &&
@@ -235,8 +248,8 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       </div>
 
       <!-- Tags -->
-      <div v-if="publication.tags.length" class="flex flex-wrap gap-2">
-        <UBadge v-for="tag in publication.tags" :key="tag.id" variant="outline"
+      <div v-if="visibleTags.length" class="flex flex-wrap gap-2">
+        <UBadge v-for="tag in visibleTags" :key="tag.id" variant="outline"
           class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800">
           {{ tag.name }}
         </UBadge>
