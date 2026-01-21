@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useAuthStore } from '~/stores/auth-store'
 import ManageTagsModal from './ManageTagsModal.vue'
+import HistoryModal from './HistoryModal.vue'
 
 interface Comment {
   id: number
@@ -63,6 +65,7 @@ const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
 const manageTagsModalOpen = ref(false)
+const showHistoryModal = ref(false)
 
 const toast = useToast()
 const config = useRuntimeConfig()
@@ -190,6 +193,7 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
   }
   emit('tags-updated', updatedPublication)
 }
+
 </script>
 
 <template>
@@ -255,6 +259,11 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       <div class="flex items-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
+
+        <UButton v-if="isAuthor"
+          color="secondary" variant="ghost" size="sm"
+          icon="i-lucide-history" label="Histórico"
+          @click="showHistoryModal = true" />
 
         <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
           @click="manageTagsModalOpen = true" />
@@ -410,6 +419,12 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
       v-model="manageTagsModalOpen"
       :publication="publication"
       @tags-updated="handleTagsUpdated"
+    />
+
+    <!-- History Modal -->
+    <HistoryModal
+      v-model="showHistoryModal"
+      :publication-id="publication.id"
     />
   </UCard>
 </template>
