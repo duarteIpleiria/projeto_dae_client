@@ -366,13 +366,11 @@ async function unsubscribeFromTag(tag: Tag) {
     <template #body>
       <!-- Sticky bars: Subscribed and Hidden tags side by side -->
       <div class="sticky top-0 z-10 bg-background border-b border-default mb-6">
-        <div :class="canManageVisibility ? 'grid grid-cols-2 gap-4 p-4' : 'p-4'">
+        <div class="p-4" :class="canManageVisibility ? 'grid grid-cols-2 gap-6' : ''">
           <!-- Subscribed tags section -->
           <div
             :class="{ 
-              'border-r border-default pr-4': canManageVisibility,
-              'border-2 border-primary-500 border-dashed rounded-l-md': isDraggingOver && canManageVisibility,
-              'border-2 border-primary-500 border-dashed rounded-md': isDraggingOver && !canManageVisibility
+              'border-2 border-primary-500 border-dashed rounded-md': isDraggingOver
             }"
             @dragover="handleDragOver"
             @dragleave="handleDragLeave"
@@ -440,8 +438,7 @@ async function unsubscribeFromTag(tag: Tag) {
           <div 
             v-if="canManageVisibility"
             :class="{ 
-              'pl-4': canManageVisibility,
-              'border-2 border-amber-500 border-dashed rounded-r-md': isDraggingOverHidden 
+              'border-2 border-amber-500 border-dashed rounded-md': isDraggingOverHidden 
             }"
             @dragover="handleDragOverHidden"
             @dragleave="handleDragLeaveHidden"
