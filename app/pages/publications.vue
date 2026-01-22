@@ -29,7 +29,11 @@ const showEditModal = ref(false)
 const selectedPublicationForRating = ref<any>(null)
 const selectedPublicationForEdit = ref<any>(null)
 
-const searchQuery = ref('')
+const searchTitle = ref('')
+const searchAuthorId = ref('')
+const searchScientificArea = ref('')
+const searchDateFrom = ref('')
+const searchDateTo = ref('')
 const selectedFilter = ref<'all' | 'visible' | 'hidden'>('all')
 const selectedTag = ref<number | null>(null)
 const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count' | null>(null)
@@ -56,9 +60,9 @@ const loadTags = async () => {
 
     console.log('Carregando tags de:', `${api}/tags`)
     const response = await $fetch(`${api}/tags`, {
-      headers: token ? {
+      headers: {
         Authorization: `Bearer ${token}`
-      } : {}
+      }
     }) as any
 
     console.log('✅ Tags carregadas:', response)
@@ -85,73 +89,65 @@ const loadPublications = async () => {
     loading.value = true
   }
   try {
-    console.log('Carregando todas as publicações com filtros:', {
-      page: currentPage.value,
-      limit: itemsPerPage.value,
-      visibility: selectedFilter.value,
-      tag: selectedTag.value,
-      sortBy: sortBy.value,
-      sortOrder: sortOrder.value
-    })
-
     const config = useRuntimeConfig()
     const api = config.public.apiBase
     const token = authStore.token
 
     let response: any
 
-    // ===== CRITICAL FIX: Use different endpoint for hidden publications =====
-    if (selectedFilter.value === 'hidden') {
-      // Use /hidden-content endpoint for hidden publications
-      const params = new URLSearchParams({
-        type: 'publications',
-        page: currentPage.value.toString(),
-        limit: itemsPerPage.value.toString(),
-        sortBy: sortBy.value || 'updatedAt',
-        order: sortOrder.value || 'desc'
-      })
+    // Se há critérios de pesquisa, usar endpoint de search
+    const hasSearchCriteria = searchTitle.value || searchAuthorId.value || searchScientificArea.value || 
+                              searchDateFrom.value || searchDateTo.value
+    
+    if (hasSearchCriteria) {
+      const searchBody: any = {}
+      if (searchTitle.value) searchBody.title = searchTitle.value
+      if (searchAuthorId.value) {
+        const authorIdNum = parseInt(searchAuthorId.value)
+        if (!isNaN(authorIdNum)) {
+          searchBody.author_id = authorIdNum
+        }
+      }
+      if (searchScientificArea.value) searchBody.scientific_area = searchScientificArea.value
+      if (searchDateFrom.value) searchBody.date_from = searchDateFrom.value
+      if (searchDateTo.value) searchBody.date_to = searchDateTo.value
 
-      response = await $fetch(`${api}/hidden-content?${params}`, {
+      console.log('Pesquisando publicações:', searchBody)
+
+      response = await $fetch(`${api}/posts/search`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
+        body: searchBody
+      })
+    } else if (sortBy.value) {
+      // Se sortBy está definido, usa ordenação
+      response = await $fetch(`${api}/posts/sort`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
+        body: {
+          sort_by: sortBy.value,
+          order: sortOrder.value
+        }
+      })
+    } else {
+      // Buscar sem ordenação (ordem padrão da API)
+      response = await $fetch(`${api}/posts`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Accept': 'application/json; charset=UTF-8',
           'Accept-Charset': 'UTF-8'
         }
       })
-      
-      console.log('📊 Hidden content response:', response)
-    } else {
-      // For 'all' and 'visible' filters, use normal /posts endpoint
-      if (sortBy.value) {
-        response = await $fetch(`${api}/posts/sort`, {
-          method: 'POST',
-          headers: token ? {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json; charset=UTF-8',
-            'Accept': 'application/json; charset=UTF-8',
-            'Accept-Charset': 'UTF-8'
-          } : {
-            'Content-Type': 'application/json; charset=UTF-8',
-            'Accept': 'application/json; charset=UTF-8',
-            'Accept-Charset': 'UTF-8'
-          },
-          body: {
-            sort_by: sortBy.value,
-            order: sortOrder.value
-          }
-        })
-      } else {
-        response = await $fetch(`${api}/posts`, {
-          headers: token ? {
-            Authorization: `Bearer ${token}`,
-            'Accept': 'application/json; charset=UTF-8',
-            'Accept-Charset': 'UTF-8'
-          } : {
-            'Accept': 'application/json; charset=UTF-8',
-            'Accept-Charset': 'UTF-8'
-          }
-        })
-      }
     }
 
     console.log('Resposta completa:', response)
@@ -159,22 +155,16 @@ const loadPublications = async () => {
     // Processar dados
     let data = Array.isArray(response) ? response : (response?.data || [])
     
-    console.log('📊 Dados recebidos do backend:', data.length, 'publicações')
-    console.log('📊 Primeiras 3 publicações (raw):', data.slice(0, 3))
-    
     // Normalizar publicações PRIMEIRO
     data = data.map((p: any) => {
       const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
-      const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
-      
-      console.log(`📝 Publicação ${p.id} (${p.title}): isVisible=${p.isVisible}, is_visible=${p.is_visible}, visible=${p.visible} -> normalizado=${isVisible}`)
       
       return {
         ...p,
         average_rating: p?.average_rating ?? p?.averageRating ?? 0,
         ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
         comments_count: commentsCount,
-        is_visible: isVisible,
+        is_visible: p?.is_visible ?? p?.visible ?? false,
         comments: p?.comments || []
       }
     })
@@ -187,26 +177,13 @@ const loadPublications = async () => {
       })))
     }
     
-    console.log('📊 Dados recebidos:', data.length, 'publicações')
-    console.log('📊 Filtro selecionado:', selectedFilter.value)
-    
-    // ===== REMOVED CLIENT-SIDE FILTERING =====
-    // The backend now returns the correct data based on selectedFilter
-    // - For 'hidden': uses /hidden-content endpoint (returns only hidden)
-    // - For 'visible': uses /posts endpoint and will be filtered server-side (future)
-    // - For 'all': uses /posts endpoint (returns all)
-    
-    // Apply visible filter client-side only when needed (since backend doesn't support it yet)
-    if (selectedFilter.value === 'visible') {
-      const beforeFilter = data.length
+    // Aplicar filtro de visibilidade no frontend
+    if (selectedFilter.value !== 'all') {
       data = data.filter((p: any) => {
-        const isVisible = p?.is_visible ?? p?.visible ?? true
-        return isVisible
+        const isVisible = p?.is_visible ?? p?.visible ?? false
+        return selectedFilter.value === 'visible' ? isVisible : !isVisible
       })
-      console.log(`📊 Filtro 'visible' aplicado: ${beforeFilter} -> ${data.length}`)
     }
-    
-    console.log('📊 Total de publicações após filtros:', data.length)
 
     // Aplicar filtro de tag no frontend
     if (selectedTag.value !== null) {
@@ -236,9 +213,38 @@ const loadPublications = async () => {
 }
 
 // ===== WATCHERS - DEVEM VIR DEPOIS DAS FUNÇÕES =====
-watch(selectedFilter, async (newFilter, oldFilter) => {
-  console.log('🔔 Filtro de visibilidade mudou de:', oldFilter, 'para:', newFilter)
-  console.log('🔔 Tipo do filtro:', typeof newFilter, 'Valor:', newFilter)
+watch(searchTitle, async () => {
+  console.log('🔍 Pesquisa por título:', searchTitle.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchAuthorId, async () => {
+  console.log('🔍 Pesquisa por autor ID:', searchAuthorId.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchScientificArea, async () => {
+  console.log('🔍 Pesquisa por área científica:', searchScientificArea.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchDateFrom, async () => {
+  console.log('🔍 Pesquisa de data:', searchDateFrom.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchDateTo, async () => {
+  console.log('🔍 Pesquisa até data:', searchDateTo.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(selectedFilter, async (newFilter) => {
+  console.log('🔔 Filtro de visibilidade mudou para:', newFilter)
   currentPage.value = 1
   await loadPublications()
 })
@@ -275,8 +281,7 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
   try {
     await togglePublicationVisibility(publicationId, newVisibility)
 
-    // Recarregar publicações para atualizar a lista
-    await loadPublications()
+
 
     toast.add({
       title: 'Sucesso',
@@ -321,16 +326,6 @@ const handleEditModal = async () => {
   await loadPublications()
 }
 
-// ===== COMENTÁRIO ADICIONADO =====
-const handleCommentAdded = (publicationId: number, comment: any) => {
-  const publication = publications.value.find(p => p.id === publicationId)
-  if (publication) {
-    if (!publication.comments) publication.comments = []
-    publication.comments = [...publication.comments, comment]
-    if (publication.comments_count !== undefined) publication.comments_count++
-  }
-}
-
 // ===== PUBLICAÇÃO CRIADA COM SUCESSO =====
 const handlePublicationCreated = async () => {
   showAddModal.value = false
@@ -361,7 +356,7 @@ onMounted(async () => {
         </template>
 
         <template #right>
-          <UButton v-if="user" icon="i-lucide-plus" size="md" @click="showAddModal = true">
+          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
             Nova Publicação
           </UButton>
         </template>
@@ -369,7 +364,61 @@ onMounted(async () => {
     </template>
 
     <!-- BODY -->
-    <template #body>
+    <template #body>      <!-- Pesquisa -->
+      <div class="mb-6 space-y-4">
+        <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          <UIcon name="i-lucide-search" class="w-4 h-4" />
+          <span>Pesquisar Publicações</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Pesquisa por Título -->
+          <UInput 
+            v-model="searchTitle"
+            icon="i-lucide-text"
+            placeholder="Pesquisar por título..."
+            clearable
+          />
+
+          <!-- Pesquisa por Autor ID -->
+          <UInput 
+            v-model="searchAuthorId"
+            icon="i-lucide-user"
+            type="number"
+            placeholder="ID do autor..."
+            clearable
+          />
+
+          <!-- Pesquisa por Área Científica -->
+          <UInput 
+            v-model="searchScientificArea"
+            icon="i-lucide-flask-conical"
+            placeholder="Área científica..."
+            clearable
+          />
+        </div>
+
+        <!-- Segunda linha de pesquisa -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Data de -->
+          <UInput 
+            v-model="searchDateFrom"
+            type="date"
+            icon="i-lucide-calendar"
+            placeholder="Data início..."
+            clearable
+          />
+
+          <!-- Data até -->
+          <UInput 
+            v-model="searchDateTo"
+            type="date"
+            icon="i-lucide-calendar"
+            placeholder="Data fim..."
+            clearable
+          />
+        </div>
+      </div>
       <!-- Filtros -->
       <div class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -382,8 +431,8 @@ onMounted(async () => {
               { value: 'hidden', label: 'Ocultas' }
             ]" 
             placeholder="Filtrar por visibilidade"
+            clearable
           />
-          
 
           <!-- Tags -->
           <USelect 
@@ -429,18 +478,16 @@ onMounted(async () => {
       </div>
 
       <!-- Sem resultados -->
-      <div v-else-if="publications.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-500">
-        <UIcon name="i-lucide-inbox" class="text-5xl mb-4" />
-        <p class="text-center">Nenhuma publicação encontrada</p>
+      <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
+        <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
+        Nenhuma publicação encontrada
       </div>
 
       <!-- Lista -->
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
-          :current-user-id="(user as any)?.id || 0" 
-          :show-history="true"
-          @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
-          @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
+          :current-user-id="(user as any)?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
+          @edit-summary="handleEditSummary" />
       </div>
 
       <!-- Paginação -->
