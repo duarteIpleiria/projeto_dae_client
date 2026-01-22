@@ -231,9 +231,16 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     emit('publication-updated')
     open.value = false
   } catch (e: any) {
+    console.error('❌ Erro completo ao editar publicação:', e)
+    console.error('❌ Erro data:', e.data)
+    console.error('❌ Erro status:', e.status)
+    console.error('❌ Erro statusCode:', e.statusCode)
+    console.error('❌ Erro message:', e.message)
+    
+    const errorMessage = e.data?.message || e.message || 'Erro ao atualizar publicação'
     toast.add({
       title: 'Erro',
-      description: 'Erro ao atualizar publicação',
+      description: errorMessage,
       color: 'error'
     })
   }

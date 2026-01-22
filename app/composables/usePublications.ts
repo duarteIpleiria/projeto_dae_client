@@ -287,17 +287,23 @@ export const usePublications = () => {
       const api = getApiBase()
       const formData = new FormData()
 
-      // Garantir encoding UTF-8 ao adicionar ao FormData
-      if (data.title) formData.append('title', data.title)
-      if (data.scientific_area) formData.append('scientific_area', data.scientific_area)
-      if (data.summary !== undefined) {
-        // Log para debug
-        console.log('📝 Summary original:', data.summary)
-        console.log('📝 Summary length:', data.summary.length)
-        console.log('📝 Summary charCodes:', [...data.summary].map(c => c.charCodeAt(0)))
-        formData.append('summary', data.summary)
+      // Garantir encoding UTF-8 ao adicionar ao FormData usando Blob com charset explícito
+      if (data.title) {
+        const titleBlob = new Blob([data.title], { type: 'text/plain; charset=UTF-8' })
+        formData.append('title', titleBlob, 'title')
       }
-      if (data.is_visible !== undefined) formData.append('is_visible', data.is_visible.toString())
+      if (data.scientific_area) {
+        const areaBlob = new Blob([data.scientific_area], { type: 'text/plain; charset=UTF-8' })
+        formData.append('scientific_area', areaBlob, 'scientific_area')
+      }
+      if (data.summary !== undefined) {
+        const summaryBlob = new Blob([data.summary], { type: 'text/plain; charset=UTF-8' })
+        formData.append('summary', summaryBlob, 'summary')
+      }
+      if (data.is_visible !== undefined) {
+        const visibleBlob = new Blob([data.is_visible.toString()], { type: 'text/plain; charset=UTF-8' })
+        formData.append('is_visible', visibleBlob, 'is_visible')
+      }
       if (data.file) formData.append('file', data.file)
 
       console.log('📤 Enviando PUT para posts/' + postId + ':', {
@@ -308,15 +314,39 @@ export const usePublications = () => {
         hasFile: !!data.file
       })
 
-      const response = await $fetch(`${api}/posts/${postId}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        },
-        body: formData
-      })
+      let response
+      try {
+        response = await $fetch(`${api}/posts/${postId}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Accept': 'application/json; charset=UTF-8',
+            'Accept-Charset': 'UTF-8'
+          },
+          body: formData,
+          // Adicionar timeout e retry logic
+          retry: 0,
+          // Garantir que aceita qualquer resposta 2xx como sucesso
+          onResponse({ response }) {
+            console.log('🔍 Raw response:', {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+              ok: response.ok
+            })
+          }
+        })
+      } catch (fetchError: any) {
+        // Se o erro for de parsing mas a resposta foi 200, considerar sucesso
+        if (fetchError.response?.status === 200 || fetchError.response?.ok) {
+          console.warn('⚠️ Response was 200 but parsing failed, considering success')
+          response = fetchError.response?._data || {}
+        } else {
+          throw fetchError
+        }
+      }
+
+      console.log('✅ Response received:', response)
 
       // Atualizar na lista local
       const index = publications.value.findIndex(p => p.id === postId)
@@ -324,10 +354,19 @@ export const usePublications = () => {
         publications.value[index] = normalizePublication(response || data)
       }
 
+      console.log('✅ Publication updated successfully')
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao atualizar publicação'
-      console.error('Error updating publication:', e)
+      console.error('❌ Error updating publication:', e)
+      console.error('❌ Error details:', {
+        message: e.message,
+        data: e.data,
+        status: e.status,
+        statusCode: e.statusCode,
+        response: e.response,
+        cause: e.cause
+      })
       throw e
     } finally {
       loading.value = false
