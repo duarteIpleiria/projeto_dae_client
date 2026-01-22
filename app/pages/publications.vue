@@ -16,6 +16,7 @@ const {
   loading,
   fetchUserPublications,
   togglePublicationVisibility,
+  togglePublicationConfidential,
   sortPublications,
   searchPublications,
   clearPublications
@@ -158,13 +159,24 @@ const loadPublications = async () => {
     // Normalize publications first
     data = data.map((p: any) => {
       const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
+      const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
+      const isConfidential = p?.isConfidential ?? p?.is_confidential ?? p?.confidential ?? false
+      
+      console.log(`📝 Publicação ${p.id} (${p.title}):`, {
+        raw_isConfidential: p.isConfidential,
+        raw_is_confidential: p.is_confidential, 
+        raw_confidential: p.confidential,
+        normalizado_confidential: isConfidential,
+        isVisible: isVisible
+      })
       
       return {
         ...p,
         average_rating: p?.average_rating ?? p?.averageRating ?? 0,
         ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
         comments_count: commentsCount,
-        is_visible: p?.is_visible ?? p?.visible ?? false,
+        is_visible: isVisible,
+        is_confidential: isConfidential,
         comments: p?.comments || []
       }
     })
@@ -184,6 +196,28 @@ const loadPublications = async () => {
         return selectedFilter.value === 'visible' ? isVisible : !isVisible
       })
     }
+    
+    // Apply confidential filter client-side
+    if (selectedFilter.value === 'confidential') {
+      const beforeFilter = data.length
+      console.log('🔍 Antes do filtro confidencial:', data.map(p => ({ 
+        id: p.id, 
+        title: p.title, 
+        is_confidential: p.is_confidential,
+        confidential: p.confidential 
+      })))
+      
+      data = data.filter((p: any) => {
+        const isConfidential = p?.is_confidential ?? p?.confidential ?? false
+        console.log(`Publicação ${p.id}: is_confidential=${p.is_confidential}, confidential=${p.confidential}, resultado=${isConfidential}`)
+        return isConfidential
+      })
+      
+      console.log(`📊 Filtro 'confidential' aplicado: ${beforeFilter} -> ${data.length}`)
+      console.log('🔍 Depois do filtro:', data.map(p => ({ id: p.id, title: p.title })))
+    }
+    
+    console.log('📊 Total de publicações após filtros:', data.length)
 
     // Apply tag filter on the frontend
     if (selectedTag.value !== null) {
@@ -298,6 +332,28 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
 }
 
 // ===== OPEN RATING MODAL =====
+// ===== TOGGLE CONFIDENCIAL =====
+const handleToggleConfidential = async (publicationId: number, newConfidential: boolean) => {
+  console.log('🔐 handleToggleConfidential chamado:', { publicationId, newConfidential })
+  try {
+    await togglePublicationConfidential(publicationId, newConfidential)
+    await loadPublications()
+    
+    toast.add({
+      title: 'Sucesso',
+      description: newConfidential ? 'Publicação marcada como confidencial' : 'Publicação marcada como não confidencial',
+      color: 'success'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error?.data?.error || 'Falha ao alterar confidencialidade',
+      color: 'error'
+    })
+  }
+}
+
+// ===== ABRIR MODAL DE RATING =====
 const handleRatePublication = (publication: any) => {
   selectedPublicationForRating.value = publication
   showRateModal.value = true
@@ -426,9 +482,10 @@ onMounted(async () => {
           <USelect 
             v-model="selectedFilter" 
             :items="[
-              { value: 'all', label: 'All' },
-              { value: 'visible', label: 'Visible' },
-              { value: 'hidden', label: 'Hidden' }
+              { value: 'all', label: 'Todas' },
+              { value: 'visible', label: 'Visíveis' },
+              { value: 'confidential', label: 'Confidenciais' },
+              { value: 'hidden', label: 'Ocultas' }
             ]" 
             placeholder="Filter by visibility"
             clearable
@@ -486,8 +543,13 @@ onMounted(async () => {
       <!-- Lista -->
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
-          :current-user-id="(user as any)?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
-          @edit-summary="handleEditSummary" />
+          :current-user-id="(user as any)?.id || 0" 
+          :show-history="true"
+          @toggle-visibility="handleToggleVisibility" 
+          @toggle-confidential="handleToggleConfidential"
+          @rate="handleRatePublication"
+          @edit-summary="handleEditSummary" 
+          @comment-added="handleCommentAdded" />
       </div>
 
       <!-- Paginação -->

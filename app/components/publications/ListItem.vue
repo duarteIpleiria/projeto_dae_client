@@ -25,6 +25,8 @@ interface Publication {
   summary: string
   visible?: boolean
   is_visible?: boolean
+  confidential?: boolean
+  is_confidential?: boolean
   fileUrl?: string
   file_url?: string
   fileName?: string
@@ -58,6 +60,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'toggle-visibility': [publicationId: number, currentVisibility: boolean]
+  'toggle-confidential': [publicationId: number, currentConfidential: boolean]
   'rate': [publication: Publication]
   'edit-summary': [publication: Publication]
   'tags-updated': [publication: Publication]
@@ -599,6 +602,10 @@ const getIsVisible = computed(() => {
   return props.publication.is_visible ?? props.publication.visible ?? false
 })
 
+const getIsConfidential = computed(() => {
+  return props.publication.is_confidential ?? props.publication.confidential ?? false
+})
+
 const getAverageRating = computed(() => {
   return props.publication.average_rating ?? props.publication.averageRating ?? 0
 })
@@ -703,15 +710,40 @@ const hasFile = computed(() => {
       <!-- Header with title and badges -->
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1 min-w-0">
-          <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
-            {{ publication.title }}
-          </h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
+              {{ publication.title }}
+            </h3>
+            
+            <!-- Badge Confidencial -->
+            <UBadge 
+              v-if="getIsConfidential" 
+              color="orange" 
+              variant="subtle"
+              class="flex-shrink-0"
+            >
+              <UIcon name="i-heroicons-lock-closed" class="mr-1" />
+              Confidencial
+            </UBadge>
+          </div>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {{ getScientificArea }}
           </p>
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
+          <!-- Toggle Confidencial (todos os utilizadores autenticados) -->
+          <UButton 
+            v-if="authStore.user" 
+            color="orange" 
+            variant="ghost" 
+            size="sm"
+            :icon="getIsConfidential ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
+            :title="getIsConfidential ? 'Marcar como não confidencial' : 'Marcar como confidencial'"
+            @click="$emit('toggle-confidential', publication.id, !getIsConfidential)" 
+          />
+          
+          <!-- Toggle Visibilidade -->
           <UButton v-if="canChangeVisibility" color="secondary" variant="ghost" size="sm"
             :icon="getIsVisible ? 'i-lucide-eye' : 'i-lucide-eye-off'"
             @click="$emit('toggle-visibility', publication.id, !getIsVisible)" />

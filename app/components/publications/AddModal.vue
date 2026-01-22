@@ -17,11 +17,17 @@ const emit = defineEmits<{
 }>()
 
 const { createPublication, loading, error } = usePublications()
+const authStore = useAuthStore()
 const toast = useToast()
 
 const open = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value)
+})
+
+const isAdminOrResponsavel = computed(() => {
+  // Permitir todos os utilizadores autenticados alterarem confidencialidade
+  return !!authStore.user
 })
 
 const schema = z.object({
@@ -35,7 +41,8 @@ type Schema = z.output<typeof schema>
 const state = reactive<Partial<Schema>>({
   title: '',
   scientific_area: '',
-  is_visible: false
+  is_visible: false,
+  is_confidential: false
 })
 
 const file = ref<File | null>(null)
@@ -51,6 +58,7 @@ watch(open, (value) => {
     state.title = ''
     state.scientific_area = ''
     state.is_visible = false
+    state.is_confidential = false
     file.value = null
   }
 })
@@ -79,6 +87,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: event.data.title,
       scientific_area: event.data.scientific_area,
       is_visible: event.data.is_visible,
+      is_confidential: event.data.is_confidential,
       file: file.value
     })
 
@@ -118,6 +127,12 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <UFormField label="Visibility" name="is_visible">
           <UCheckbox v-model="state.is_visible" label="Publication visible" />
+        </UFormField>
+
+        <!-- Confidencial (todos os utilizadores autenticados) -->
+        <UFormField v-if="isAdminOrResponsavel" label="Confidencialidade" name="is_confidential">
+          <UCheckbox v-model="state.is_confidential" label="Publicação confidencial (apenas utilizadores autenticados)" />
+          <p class="text-xs text-gray-500 mt-1">Visitantes não autenticados não poderão ver esta publicação</p>
         </UFormField>
 
        
