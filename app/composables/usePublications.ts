@@ -46,7 +46,9 @@ export const usePublications = () => {
 
       const response = await $fetch(`${api}/users/me/posts${params.toString() ? '?' + params.toString() : ''}`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         }
       })
 
@@ -92,7 +94,9 @@ export const usePublications = () => {
       const response = await $fetch(`${api}/posts`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: formData
       })
@@ -127,7 +131,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: searchFilters
       })
@@ -161,7 +167,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: sortParams
       })
@@ -192,9 +200,11 @@ export const usePublications = () => {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
-        body: JSON.stringify({ is_visible: visible })
+        body: JSON.stringify({ visible: visible })
       })
 
       // Atualizar na lista local
@@ -231,7 +241,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: {
           rating
@@ -253,6 +265,69 @@ export const usePublications = () => {
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao atribuir rating'
       console.error('Error rating publication:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ===== EDITAR PUBLICAÇÃO =====
+  const updatePublication = async (postId: number, data: {
+    title?: string
+    scientific_area?: string
+    summary?: string
+    is_visible?: boolean
+    file?: File
+  }) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const token = getAuthToken()
+      const api = getApiBase()
+      const formData = new FormData()
+
+      // Garantir encoding UTF-8 ao adicionar ao FormData
+      if (data.title) formData.append('title', data.title)
+      if (data.scientific_area) formData.append('scientific_area', data.scientific_area)
+      if (data.summary !== undefined) {
+        // Log para debug
+        console.log('📝 Summary original:', data.summary)
+        console.log('📝 Summary length:', data.summary.length)
+        console.log('📝 Summary charCodes:', [...data.summary].map(c => c.charCodeAt(0)))
+        formData.append('summary', data.summary)
+      }
+      if (data.is_visible !== undefined) formData.append('is_visible', data.is_visible.toString())
+      if (data.file) formData.append('file', data.file)
+
+      console.log('📤 Enviando PUT para posts/' + postId + ':', {
+        title: data.title,
+        scientific_area: data.scientific_area,
+        summary: data.summary,
+        isVisible: data.is_visible,
+        hasFile: !!data.file
+      })
+
+      const response = await $fetch(`${api}/posts/${postId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
+        body: formData
+      })
+
+      // Atualizar na lista local
+      const index = publications.value.findIndex(p => p.id === postId)
+      if (index !== -1) {
+        publications.value[index] = normalizePublication(response || data)
+      }
+
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Erro ao atualizar publicação'
+      console.error('Error updating publication:', e)
       throw e
     } finally {
       loading.value = false
@@ -384,6 +459,7 @@ export const usePublications = () => {
     error,
     fetchUserPublications,
     createPublication,
+    updatePublication,
     searchPublications,
     sortPublications,
     togglePublicationVisibility,

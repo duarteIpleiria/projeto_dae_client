@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia'
 
 const router = useRouter()
 const toast = useToast()
+const forgotPasswordOpen = ref(false)
 
 const email = ref('')
 const password = ref('')
@@ -47,6 +48,8 @@ async function login() {
           token.value = response._data.token
           user.value = response._data.user
 
+          // Salvar dados do usuário no localStorage
+          authStore.setUser(response._data.user)
 
           const authCookie = useCookie('auth_token', {
             sameSite: 'lax',
@@ -121,10 +124,24 @@ async function login() {
         </UButton>
       </UForm>
 
+      <!-- Forgot Password Link -->
+      <div class="text-center mt-4">
+        <button
+          type="button"
+          @click="forgotPasswordOpen = true"
+          class="text-sm text-primary hover:underline focus:outline-none focus:underline"
+        >
+          Esqueceu a password?
+        </button>
+      </div>
+
       <!-- Footer -->
       <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
         © {{ new Date().getFullYear() }} • Projeto DAE
       </div>
     </UCard>
+
+    <!-- Forgot Password Modal -->
+    <AuthForgotPasswordModal v-model:open="forgotPasswordOpen" />
   </div>
 </template>

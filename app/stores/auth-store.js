@@ -83,30 +83,30 @@ export const useAuthStore = defineStore('authStore', () => {
       
       // Decode payload (segunda parte)
       const decoded = JSON.parse(atob(parts[1]))
+      
+      // Preservar dados existentes do localStorage
       if (!user.value) {
         user.value = {}
       }
       
-      console.log('[AUTH] Extracting user from JWT token...')
-      
-      if (decoded.sub) {
+      // Apenas adicionar/atualizar campos que não existem ou são do token
+      if (decoded.sub && !user.value.id) {
         user.value.id = parseInt(decoded.sub)
       }
       
-      // Extract name and email if available
-      if (decoded.name) {
+      // Extract name and email if available no token e não existirem
+      if (decoded.name && !user.value.name) {
         user.value.name = decoded.name
       }
-      if (decoded.email) {
+      if (decoded.email && !user.value.email) {
         user.value.email = decoded.email
       }
       
-      console.log('[AUTH] Extracted from JWT:', user.value?.email || user.value?.id)
-      
-      // Store updated user info in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user_info', JSON.stringify(user.value))
-        console.log('[AUTH] Saved user to localStorage')
+      // Apenas salvar se adicionamos novos dados
+      if (decoded.sub || decoded.name || decoded.email) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_info', JSON.stringify(user.value))
+        }
       }
     } catch (e) {
       console.error('[AUTH] Error extracting user ID from token:', e)

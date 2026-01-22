@@ -209,13 +209,13 @@ watch(() => props.modelValue, (newValue) => {
           </div>
 
           <!-- Conteúdo da versão -->
-          <div class="space-y-2 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+          <div class="space-y-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
             <div v-if="entry.changes.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
               Nenhuma alteração detalhada disponível
             </div>
-            <div v-for="change in entry.changes" :key="change.field">
+            <div v-for="change in entry.changes" :key="change.field" class="space-y-1">
               <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{{ change.field }}</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5 leading-relaxed">
+              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
                 {{ change.value }}
               </p>
             </div>
