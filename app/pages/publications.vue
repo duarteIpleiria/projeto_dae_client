@@ -388,7 +388,9 @@ onMounted(async () => {
       <!-- Lista -->
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
-          :current-user-id="(user as any)?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
+          :current-user-id="(user as any)?.id || 0" 
+          :show-history="true"
+          @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
           @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
       </div>
 

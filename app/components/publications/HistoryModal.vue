@@ -41,6 +41,95 @@ const api = config.public.apiBase
 const authStore = useAuthStore()
 const token = authStore.token
 
+// Formatar mensagem de histórico em português natural
+const formatHistoryMessage = (changes: any): string => {
+  if (!changes || typeof changes !== 'object') return ''
+
+  const entries = Object.entries(changes)
+  if (entries.length === 0) return 'Sem alterações detalhadas'
+
+  const messages: string[] = []
+
+  for (const [field, value] of entries) {
+    if (field === 'created' || field === 'creation') {
+      messages.push('📝 Publicação criada')
+      continue
+    }
+
+    if (field === 'title') {
+      const val = extractSimpleValue(value)
+      messages.push(`📌 Título alterado para "${val}"`)
+      continue
+    }
+
+    if (field === 'summary') {
+      messages.push('📄 Resumo atualizado')
+      continue
+    }
+
+    if (field === 'scientificArea' || field === 'scientific_area') {
+      const val = extractSimpleValue(value)
+      messages.push(`🔬 Área científica alterada para "${val}"`)
+      continue
+    }
+
+    if (field === 'visible' || field === 'visibility' || field === 'isVisible' || field === 'is_visible') {
+      const val = extractSimpleValue(value)
+      const isVisible = val === 'true' || val === 'Sim' || val === 'TRUE'
+      messages.push(isVisible ? '👁️ Publicação tornada visível' : '🔒 Publicação ocultada')
+      continue
+    }
+
+    if (field === 'tags') {
+      if (Array.isArray(value)) {
+        const tagNames = value.map((t: any) => t?.name?.string || t?.name || String(t)).join(', ')
+        messages.push(`🏷️ Tags atualizadas: ${tagNames}`)
+      } else {
+        const val = extractSimpleValue(value)
+        messages.push(`🏷️ Tags: ${val}`)
+      }
+      continue
+    }
+
+    if (field === 'comment' || field === 'commentAdded') {
+      const val = extractSimpleValue(value)
+      messages.push(`💬 ${val}`)
+      continue
+    }
+
+    if (field === 'rating') {
+      const val = extractSimpleValue(value)
+      messages.push(`⭐ ${val}`)
+      continue
+    }
+
+    if (field === 'commentVisibility') {
+      const val = extractSimpleValue(value)
+      messages.push(`👁️ ${val}`)
+      continue
+    }
+
+    // Genérico
+    const val = extractSimpleValue(value)
+    messages.push(`${field}: ${val}`)
+  }
+
+  return messages.join('\n')
+}
+
+// Helper para extrair valor simples
+const extractSimpleValue = (obj: any): string => {
+  if (!obj) return '—'
+  if (typeof obj === 'string') return obj
+  if (obj.string) return obj.string
+  if (obj.chars) return obj.chars
+  if (obj.valueType === 'TRUE') return 'Sim'
+  if (obj.valueType === 'FALSE') return 'Não'
+  if (obj.value !== undefined) return String(obj.value)
+  if (Array.isArray(obj)) return obj.map(extractSimpleValue).join(', ')
+  return JSON.stringify(obj)
+}
+
 // Carregar histórico
 const loadHistory = async () => {
   try {
@@ -229,15 +318,12 @@ watch(() => props.modelValue, (newValue) => {
           </div>
 
           <!-- Conteúdo da versão -->
-          <div class="space-y-3 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+          <div class="pl-4 border-l-2 border-gray-200 dark:border-gray-700">
             <div v-if="entry.changes.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
               Nenhuma alteração detalhada disponível
             </div>
-            <div v-for="change in entry.changes" :key="change.field" class="space-y-1">
-              <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">{{ change.field }}</span>
-              <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                {{ change.value }}
-              </p>
+            <div v-else class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+              {{ formatHistoryMessage(Object.fromEntries(entry.changes.map(c => [c.field, c.value]))) }}
             </div>
           </div>
         </div>
