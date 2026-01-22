@@ -3,7 +3,7 @@
 definePageMeta({
   layout: 'auth'
 })
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth-store'
 import { storeToRefs } from 'pinia'
@@ -21,6 +21,13 @@ const loading = ref(false)
 const authStore = useAuthStore()
 const { token, user } = storeToRefs(authStore)
 
+// Verificar se já está logado ao entrar na página
+onMounted(() => {
+  authStore.init()
+  if (authStore.isAuthenticated()) {
+    router.push('/publications')
+  }
+})
 
 const config = useRuntimeConfig()
 const api = config.public.apiBase;

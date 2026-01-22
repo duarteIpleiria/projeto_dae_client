@@ -132,10 +132,10 @@ export const useAuthStore = defineStore('authStore', () => {
     
     console.log('[AUTH] Auth state cleared')
 
-    // Only navigate if we actually had auth (prevent double redirects)
+    // Redirecionar para publicações para continuar como anônimo
     if (hadAuth) {
-      console.log('[AUTH] Redirecting to /login')
-      navigateTo('/login')
+      console.log('[AUTH] Redirecting to /publications')
+      navigateTo('/publications')
     }
   }
 
@@ -150,6 +150,10 @@ export const useAuthStore = defineStore('authStore', () => {
     }
   }
 
+  function isAuthenticated() {
+    return !!token.value && isTokenValid()
+  }
+
   return {
     token,
     user,
@@ -157,6 +161,7 @@ export const useAuthStore = defineStore('authStore', () => {
     logout,
     setUser,
     extractUserIdFromToken,
-    isTokenValid
+    isTokenValid,
+    isAuthenticated
   }
 })
