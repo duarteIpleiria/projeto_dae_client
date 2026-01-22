@@ -32,25 +32,30 @@ export const useAuthStore = defineStore('authStore', () => {
       
       // Decode payload (segunda parte)
       const decoded = JSON.parse(atob(parts[1]))
+      
+      // Preservar dados existentes do localStorage
       if (!user.value) {
         user.value = {}
       }
       
-      if (decoded.sub) {
+      // Apenas adicionar/atualizar campos que não existem ou são do token
+      if (decoded.sub && !user.value.id) {
         user.value.id = parseInt(decoded.sub)
       }
       
-      // Extract name and email if available
-      if (decoded.name) {
+      // Extract name and email if available no token e não existirem
+      if (decoded.name && !user.value.name) {
         user.value.name = decoded.name
       }
-      if (decoded.email) {
+      if (decoded.email && !user.value.email) {
         user.value.email = decoded.email
       }
       
-      // Store updated user info in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user_info', JSON.stringify(user.value))
+      // Apenas salvar se adicionamos novos dados
+      if (decoded.sub || decoded.name || decoded.email) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_info', JSON.stringify(user.value))
+        }
       }
     } catch (e) {
       console.error('Error extracting user ID from token:', e)

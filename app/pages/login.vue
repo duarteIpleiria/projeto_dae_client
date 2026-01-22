@@ -47,6 +47,8 @@ async function login() {
           token.value = response._data.token
           user.value = response._data.user
 
+          // Salvar dados do usuário no localStorage
+          authStore.setUser(response._data.user)
 
           const authCookie = useCookie('auth_token', {
             sameSite: 'lax',
