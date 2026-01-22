@@ -151,7 +151,7 @@ const loadPublications = async () => {
       })
     }
 
-    console.log('Resposta completa:', response)
+    console.log('Full response:', response)
 
     // Process data
     let data = Array.isArray(response) ? response : (response?.data || [])
@@ -162,7 +162,7 @@ const loadPublications = async () => {
       const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
       const isConfidential = p?.isConfidential ?? p?.is_confidential ?? p?.confidential ?? false
       
-      console.log(`📝 Publicação ${p.id} (${p.title}):`, {
+      console.log(`📝 Publication ${p.id} (${p.title}):`, {
         raw_isConfidential: p.isConfidential,
         raw_is_confidential: p.is_confidential, 
         raw_confidential: p.confidential,
@@ -183,7 +183,7 @@ const loadPublications = async () => {
     
     // Log before filters
     if (sortBy.value) {
-      console.log(`📊 Ordem do backend (${sortBy.value}):`, data.slice(0, 5).map((p: any) => ({
+      console.log(`📊 Backend order (${sortBy.value}):`, data.slice(0, 5).map((p: any) => ({
         id: p.id,
         [sortBy.value]: p[sortBy.value]
       })))
@@ -192,7 +192,7 @@ const loadPublications = async () => {
     // Apply confidential filter client-side (must come BEFORE visibility filter)
     if (selectedFilter.value === 'confidential') {
       const beforeFilter = data.length
-      console.log('🔍 Antes do filtro confidencial:', data.map(p => ({ 
+      console.log('🔍 Before confidential filter:', data.map(p => ({ 
         id: p.id, 
         title: p.title, 
         is_confidential: p.is_confidential,
@@ -201,12 +201,12 @@ const loadPublications = async () => {
       
       data = data.filter((p: any) => {
         const isConfidential = p?.is_confidential ?? p?.confidential ?? false
-        console.log(`Publicação ${p.id}: is_confidential=${p.is_confidential}, confidential=${p.confidential}, resultado=${isConfidential}`)
+        console.log(`Publication ${p.id}: is_confidential=${p.is_confidential}, confidential=${p.confidential}, result=${isConfidential}`)
         return isConfidential
       })
       
-      console.log(`📊 Filtro 'confidential' aplicado: ${beforeFilter} -> ${data.length}`)
-      console.log('🔍 Depois do filtro:', data.map(p => ({ id: p.id, title: p.title })))
+      console.log(`📊 Confidential filter applied: ${beforeFilter} -> ${data.length}`)
+      console.log('🔍 After filter:', data.map(p => ({ id: p.id, title: p.title })))
     }
     // Apply visibility filter on the frontend (ONLY if not already filtering by confidential)
     else if (selectedFilter.value !== 'all') {
@@ -216,7 +216,7 @@ const loadPublications = async () => {
       })
     }
     
-    console.log('📊 Total de publicações após filtros:', data.length)
+    console.log('📊 Total publications after filters:', data.length)
 
     // Apply tag filter on the frontend
     if (selectedTag.value !== null) {
@@ -341,9 +341,9 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
 }
 
 // ===== OPEN RATING MODAL =====
-// ===== TOGGLE CONFIDENCIAL =====
+// ===== TOGGLE CONFIDENTIAL =====
 const handleToggleConfidential = async (publicationId: number, newConfidential: boolean) => {
-  console.log('🔐 handleToggleConfidential chamado:', { publicationId, newConfidential })
+  console.log('🔐 handleToggleConfidential called:', { publicationId, newConfidential })
   try {
     await togglePublicationConfidential(publicationId, newConfidential)
     
@@ -360,14 +360,14 @@ const handleToggleConfidential = async (publicationId: number, newConfidential: 
     }
     
     toast.add({
-      title: 'Sucesso',
-      description: newConfidential ? 'Publicação marcada como confidencial' : 'Publicação marcada como não confidencial',
+      title: 'Success',
+      description: newConfidential ? 'Publication marked as confidential' : 'Publication marked as not confidential',
       color: 'success'
     })
   } catch (error: any) {
     toast.add({
-      title: 'Erro',
-      description: error?.data?.error || 'Falha ao alterar confidencialidade',
+      title: 'Error',
+      description: error?.data?.error || 'Failed to change confidentiality',
       color: 'error'
     })
   }
@@ -495,17 +495,17 @@ onMounted(async () => {
           />
         </div>
       </div>
-      <!-- Filtros -->
+      <!-- Filters -->
       <div class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Visibility -->
           <USelect 
             v-model="selectedFilter" 
             :items="[
-              { value: 'all', label: 'Todas' },
-              { value: 'visible', label: 'Visíveis' },
-              { value: 'confidential', label: 'Confidenciais' },
-              { value: 'hidden', label: 'Ocultas' }
+              { value: 'all', label: 'All' },
+              { value: 'visible', label: 'Visible' },
+              { value: 'confidential', label: 'Confidential' },
+              { value: 'hidden', label: 'Hidden' }
             ]" 
             placeholder="Filter by visibility"
             clearable
@@ -525,7 +525,7 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Ordenação -->
+        <!-- Sorting -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <!-- Order by -->
           <USelect 
@@ -564,7 +564,7 @@ onMounted(async () => {
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
           :current-user-id="(user as any)?.id || 0" 
-          :show-history="true"
+          :show-history="false"
           @toggle-visibility="handleToggleVisibility" 
           @toggle-confidential="handleToggleConfidential"
           @rate="handleRatePublication"

@@ -22,7 +22,7 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
   if (!token.value) return []
   
   try {
-    // Buscar todas as estatísticas em paralelo
+    // Fetch all stats in parallel
     const [usersRes, publicationsRes, tagsRes] = await Promise.all([
       $fetch(`${api}/users`, {
         headers: { Authorization: `Bearer ${token.value}` }
@@ -44,9 +44,9 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
     const publications = Array.isArray(publicationsRes) ? publicationsRes : []
     const tags = Array.isArray(tagsRes) ? tagsRes : []
 
-    console.log('Dashboard - Publicações:', publications)
+    console.log('Dashboard - Publications:', publications)
 
-    // Calcular estatísticas de avaliações
+    // Calculate rating statistics
     const totalRatings = publications.reduce((sum: number, pub: any) => 
       sum + (pub.ratings_count || pub.ratingsCount || 0), 0
     )
@@ -57,31 +57,31 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
         ) / publications.length
       : 0
 
-    // Contar publicações visíveis - verificar ambas as propriedades
+    // Count visible publications - check both properties
     const visiblePublications = publications.filter((pub: any) => {
       const isVisible = pub.is_visible !== undefined ? pub.is_visible : pub.visible
-      console.log(`Pub ${pub.id}: is_visible=${pub.is_visible}, visible=${pub.visible}, resultado=${isVisible}`)
+      console.log(`Pub ${pub.id}: is_visible=${pub.is_visible}, visible=${pub.visible}, result=${isVisible}`)
       return isVisible === true
     }).length
 
-    // Contar total de comentários
+    // Count total comments
     const totalComments = publications.reduce((sum: number, pub: any) => 
       sum + (pub.comments?.length || 0), 0
     )
 
-    console.log('Total publicações:', publications.length)
-    console.log('Publicações visíveis:', visiblePublications)
+    console.log('Total publications:', publications.length)
+    console.log('Visible publications:', visiblePublications)
 
     return [
       {
-        title: 'Utilizadores',
+        title: 'Users',
         icon: 'i-lucide-users',
         value: users.length,
         color: 'primary',
         to: '/users'
       },
       {
-        title: 'Publicações',
+        title: 'Publications',
         icon: 'i-lucide-file-text',
         value: publications.length,
         color: 'success',
@@ -95,26 +95,26 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
         to: '/tags'
       },
       {
-        title: 'Avaliação Média',
+        title: 'Average Rating',
         icon: 'i-lucide-star',
         value: avgRating.toFixed(1),
         color: 'info'
       },
       {
-        title: 'Total Avaliações',
+        title: 'Total Ratings',
         icon: 'i-lucide-chart-bar',
         value: totalRatings,
         color: 'secondary'
       },
       {
-        title: 'Total Comentários',
+        title: 'Total Comments',
         icon: 'i-lucide-message-square',
         value: totalComments,
         color: 'primary'
       }
     ]
   } catch (error) {
-    console.error('Erro ao carregar estatísticas:', error)
+    console.error('Error loading statistics:', error)
     return []
   }
 }, {

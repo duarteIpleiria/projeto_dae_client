@@ -39,7 +39,7 @@ const loadRatingsDistribution = async () => {
 
     const publications = Array.isArray(response) ? response : []
     
-    // Agrupar por rating (0-5 com intervalos de 0.5)
+    // Group by rating (0-5 in 0.5 steps)
     const ratingCount: Record<number, number> = {
       0: 0, 0.5: 0, 1: 0, 1.5: 0, 2: 0, 2.5: 0, 3: 0, 3.5: 0, 4: 0, 4.5: 0, 5: 0
     }
@@ -50,7 +50,7 @@ const loadRatingsDistribution = async () => {
     publications.forEach((pub: any) => {
       const rating = pub.average_rating || pub.averageRating || 0
       if (rating > 0) {
-        const rounded = Math.round(rating * 2) / 2 // Arredondar para 0.5
+        const rounded = Math.round(rating * 2) / 2 // Round to 0.5
         ratingCount[rounded] = (ratingCount[rounded] || 0) + 1
         totalRatings++
         sumRatings += rating
@@ -64,7 +64,7 @@ const loadRatingsDistribution = async () => {
     total.value = totalRatings
     avgRating.value = totalRatings > 0 ? sumRatings / totalRatings : 0
   } catch (error) {
-    console.error('Erro ao carregar distribuição de avaliações:', error)
+    console.error('Error loading rating distribution:', error)
   }
 }
 
@@ -78,7 +78,7 @@ const xTicks = (i: number) => {
   return data.value[i].rating.toString()
 }
 
-const template = (d: DataRecord) => `${d.rating} ⭐: ${d.count} publicações`
+const template = (d: DataRecord) => `${d.rating} ⭐: ${d.count} publications`
 </script>
 
 <template>
@@ -86,10 +86,10 @@ const template = (d: DataRecord) => `${d.rating} ⭐: ${d.count} publicações`
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          Distribuição de Avaliações
+          Rating Distribution
         </p>
         <p class="text-3xl text-highlighted font-semibold">
-          {{ avgRating.toFixed(1) }} ⭐ média
+          {{ avgRating.toFixed(1) }} ⭐ average
         </p>
       </div>
     </template>
@@ -133,7 +133,7 @@ const template = (d: DataRecord) => `${d.rating} ⭐: ${d.count} publicações`
     </VisXYContainer>
 
     <div v-else class="h-96 flex items-center justify-center text-muted">
-      <p>Sem avaliações para apresentar</p>
+      <p>No ratings to display</p>
     </div>
   </UCard>
 </template>

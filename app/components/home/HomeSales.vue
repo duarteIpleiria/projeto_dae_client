@@ -38,22 +38,22 @@ const { data } = await useAsyncData<PublicationStat[]>('publication-stats', asyn
 
     const publications = Array.isArray(response) ? response : []
     
-    // Mapear para estatísticas e ordenar por número de avaliações
+    // Map to stats and sort by rating count
     const stats = publications
       .map((pub: any) => ({
         id: pub.id,
         title: pub.title,
-        author: pub.author?.name || pub.authorName || 'Desconhecido',
+        author: pub.author?.name || pub.authorName || 'Unknown',
         ratings_count: pub.ratings_count || pub.ratingsCount || 0,
         average_rating: pub.average_rating || pub.averageRating || 0,
         comments_count: pub.comments?.length || 0
       }))
       .sort((a, b) => b.ratings_count - a.ratings_count)
-      .slice(0, 10) // Top 10 publicações
+      .slice(0, 10) // Top 10 publications
 
     return stats
   } catch (error) {
-    console.error('Erro ao carregar estatísticas de publicações:', error)
+    console.error('Error loading publication statistics:', error)
     return []
   }
 }, {
@@ -64,7 +64,7 @@ const { data } = await useAsyncData<PublicationStat[]>('publication-stats', asyn
 const columns: TableColumn<PublicationStat>[] = [
   {
     accessorKey: 'title',
-    header: 'Publicação',
+    header: 'Publication',
     cell: ({ row }) => {
       const title = row.getValue('title') as string
       return title.length > 50 ? title.substring(0, 50) + '...' : title
@@ -72,18 +72,18 @@ const columns: TableColumn<PublicationStat>[] = [
   },
   {
     accessorKey: 'author',
-    header: 'Autor'
+    header: 'Author'
   },
   {
     accessorKey: 'ratings_count',
-    header: () => h('div', { class: 'text-center' }, 'Avaliações'),
+    header: () => h('div', { class: 'text-center' }, 'Ratings'),
     cell: ({ row }) => {
       return h('div', { class: 'text-center font-medium' }, row.getValue('ratings_count'))
     }
   },
   {
     accessorKey: 'average_rating',
-    header: () => h('div', { class: 'text-center' }, 'Média'),
+    header: () => h('div', { class: 'text-center' }, 'Average'),
     cell: ({ row }) => {
       const rating = Number.parseFloat(row.getValue('average_rating'))
       const color = rating >= 4 ? 'success' : rating >= 3 ? 'warning' : 'error'
@@ -97,7 +97,7 @@ const columns: TableColumn<PublicationStat>[] = [
   },
   {
     accessorKey: 'comments_count',
-    header: () => h('div', { class: 'text-center' }, 'Comentários'),
+    header: () => h('div', { class: 'text-center' }, 'Comments'),
     cell: ({ row }) => {
       return h('div', { class: 'text-center' }, row.getValue('comments_count'))
     }

@@ -715,7 +715,7 @@ const hasFile = computed(() => {
               {{ publication.title }}
             </h3>
             
-            <!-- Badge Confidencial -->
+            <!-- Confidential badge -->
             <UBadge 
               v-if="getIsConfidential" 
               color="orange" 
@@ -723,7 +723,7 @@ const hasFile = computed(() => {
               class="flex-shrink-0"
             >
               <UIcon name="i-heroicons-lock-closed" class="mr-1" />
-              Confidencial
+              Confidential
             </UBadge>
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -732,14 +732,14 @@ const hasFile = computed(() => {
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
-          <!-- Toggle Confidencial (todos os utilizadores autenticados) -->
+          <!-- Toggle confidential (all authenticated users) -->
           <UButton 
             v-if="authStore.user" 
             color="orange" 
             variant="ghost" 
             size="sm"
             :icon="getIsConfidential ? 'i-heroicons-lock-closed' : 'i-heroicons-lock-open'"
-            :title="getIsConfidential ? 'Marcar como não confidencial' : 'Marcar como confidencial'"
+            :title="getIsConfidential ? 'Mark as not confidential' : 'Mark as confidential'"
             @click="$emit('toggle-confidential', publication.id, !getIsConfidential)" 
           />
           
