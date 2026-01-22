@@ -36,14 +36,19 @@ const links = computed(() => {
     onSelect: () => {
       open.value = false
     }
-  }, {
-    label: 'Users',
-    icon: 'i-lucide-user',
-    to: '/users',
-    onSelect: () => {
-      open.value = false
-    }
   }]
+
+  // Add Users link only for Administrador
+  if (authStore.user?.role === 'Administrador') {
+    baseLinks.push({
+      label: 'Users',
+      icon: 'i-lucide-user',
+      to: '/users',
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
 
   // Add Hidden Content link for admins and responsaveis
   if (canAccessHiddenContent.value) {
