@@ -130,14 +130,18 @@ const loadPublications = async () => {
       })
     } else if (sortBy.value) {
       // If sortBy is defined, use sorting
+      const sortHeaders: Record<string, string> = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json; charset=UTF-8',
+        'Accept-Charset': 'UTF-8'
+      }
+      // Only add Authorization header if user is authenticated
+      if (token) {
+        sortHeaders.Authorization = `Bearer ${token}`
+      }
       response = await $fetch(`${api}/posts/sort`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        },
+        headers: sortHeaders,
         body: {
           sort_by: sortBy.value,
           order: sortOrder.value
@@ -145,12 +149,16 @@ const loadPublications = async () => {
       })
     } else {
       // Fetch without sorting (API default order)
+      const headers: Record<string, string> = {
+        'Accept': 'application/json; charset=UTF-8',
+        'Accept-Charset': 'UTF-8'
+      }
+      // Only add Authorization header if user is authenticated
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
       response = await $fetch(`${api}/posts`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        }
+        headers
       })
     }
 
@@ -456,7 +464,7 @@ onMounted(async () => {
         </template>
 
         <template #right>
-          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
+          <UButton v-if="user" icon="i-lucide-plus" size="md" @click="showAddModal = true">
             New Publication
           </UButton>
         </template>
