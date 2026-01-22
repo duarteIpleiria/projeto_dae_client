@@ -5,6 +5,8 @@ interface Publication {
   id: number
   title: string
   is_visible: boolean
+  userRating?: number | null
+  user_rating?: number | null
   author: {
     id: number
     name: string
@@ -38,6 +40,21 @@ const open = computed({
 
 const selectedRating = ref(0)
 const hoveredRating = ref(0)
+
+// Get existing user rating
+const existingUserRating = computed(() => {
+  if (!props.publication) return null
+  return props.publication.userRating ?? props.publication.user_rating ?? null
+})
+
+// Initialize selectedRating with existing rating when modal opens
+watch(open, (isOpen) => {
+  if (isOpen && existingUserRating.value) {
+    selectedRating.value = existingUserRating.value
+  } else if (isOpen) {
+    selectedRating.value = 0
+  }
+})
 
 // Check if the user can rate
 const canRate = computed(() => {
@@ -117,7 +134,16 @@ const submitRating = async () => {
 
         <!-- Estrelas de avaliação -->
         <div v-else class="flex flex-col items-center gap-4">
-          <p class="text-sm text-gray-600 dark:text-gray-400">
+          <!-- Show existing rating if any -->
+          <div v-if="existingUserRating" class="text-center">
+            <p class="text-sm text-yellow-600 dark:text-yellow-400 font-medium mb-2">
+              Your current rating: {{ existingUserRating }} star{{ existingUserRating > 1 ? 's' : '' }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              Click to update your rating
+            </p>
+          </div>
+          <p v-else class="text-sm text-gray-600 dark:text-gray-400">
             Click to rate (1 to 5 stars)
           </p>
 
@@ -156,7 +182,7 @@ const submitRating = async () => {
             @click="open = false"
           />
           <UButton
-            label="Submit Rating"
+            :label="existingUserRating ? 'Update Rating' : 'Submit Rating'"
             color="primary"
             :disabled="!canRate || selectedRating === 0"
             :loading="loading"

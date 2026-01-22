@@ -97,21 +97,24 @@ const loadPublications = async () => {
     let response: any
 
     // If there are search criteria, use the search endpoint
-    const hasSearchCriteria = searchTitle.value || searchAuthorId.value || searchScientificArea.value || 
-                              searchDateFrom.value || searchDateTo.value
+    const hasSearchCriteria = (searchTitle.value && searchTitle.value.trim()) || 
+                              (searchAuthorId.value && searchAuthorId.value.trim()) || 
+                              (searchScientificArea.value && searchScientificArea.value.trim()) || 
+                              (searchDateFrom.value && searchDateFrom.value.trim()) || 
+                              (searchDateTo.value && searchDateTo.value.trim())
     
     if (hasSearchCriteria) {
       const searchBody: any = {}
-      if (searchTitle.value) searchBody.title = searchTitle.value
-      if (searchAuthorId.value) {
+      if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
+      if (searchAuthorId.value && searchAuthorId.value.trim()) {
         const authorIdNum = parseInt(searchAuthorId.value)
         if (!isNaN(authorIdNum)) {
           searchBody.author_id = authorIdNum
         }
       }
-      if (searchScientificArea.value) searchBody.scientific_area = searchScientificArea.value
-      if (searchDateFrom.value) searchBody.date_from = searchDateFrom.value
-      if (searchDateTo.value) searchBody.date_to = searchDateTo.value
+      if (searchScientificArea.value && searchScientificArea.value.trim()) searchBody.scientific_area = searchScientificArea.value.trim()
+      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.date_from = searchDateFrom.value.trim()
+      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.date_to = searchDateTo.value.trim()
 
       console.log('Searching publications:', searchBody)
 
