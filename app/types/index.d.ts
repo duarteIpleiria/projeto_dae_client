@@ -47,6 +47,7 @@ export interface UserData {
   email: string
   role: string
   password: string | null
+  active: boolean
 }
 
 export interface Mail {

@@ -25,19 +25,20 @@ export default defineNuxtPlugin(() => {
     },
 
     onResponseError({ request, response }) {
-      console.error(`[API] Error response from ${request}: ${response.status}`)
+      const url = typeof request === 'string' ? request : request.url || 'unknown'
+      console.error(`[API] Error response from ${url}: ${response.status}`)
       
       // Handle authentication errors globally
       if (response.status === 401) {
-        console.error('[API] 401 Unauthorized - Token invalid or expired')
+        console.error(`[API] 401 Unauthorized on ${url} - Token invalid or expired`)
         
         // Only logout if we actually have a token (prevents loop)
         if (authStore.token) {
-          console.log('[API] Logging out due to 401')
+          console.log(`[API] Logging out due to 401 from ${url}`)
           authStore.logout('api_401_error')
         }
       } else if (response.status === 403) {
-        console.error('[API] 403 Forbidden - Insufficient permissions')
+        console.error(`[API] 403 Forbidden on ${url} - Insufficient permissions`)
         // Don't logout on 403, just log it
       }
     }

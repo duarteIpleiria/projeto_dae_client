@@ -99,11 +99,66 @@ export const useUser = () => {
     }
   }
 
+  // ===== TOGGLE USER ACTIVE STATUS (EP25/EP26) =====
+  const toggleUserActive = async (userId: number, active: boolean) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const config = useRuntimeConfig()
+      const api = config.public.apiBase
+      const token = useCookie('auth_token').value
+
+      if (!token) {
+        error.value = 'Authentication required'
+        loading.value = false
+        throw new Error('Authentication required')
+      }
+
+      // Use proper soft delete endpoints
+      const endpoint = active ? 'activate' : 'deactivate'
+      const fullUrl = `${api}/users/${userId}/${endpoint}`
+      
+      console.log('[useUser] toggleUserActive:', {
+        userId,
+        active,
+        endpoint,
+        fullUrl,
+        hasToken: !!token
+      })
+      
+      const response = await $fetch(fullUrl, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      console.log('[useUser] toggleUserActive success:', response)
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Failed to update user status'
+      console.error('[useUser] Error toggling user active status:', {
+        userId,
+        active,
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
     updateProfile,
     forgotPassword,
-    getCurrentUser
+    getCurrentUser,
+    toggleUserActive
   }
 }
