@@ -189,15 +189,7 @@ const loadPublications = async () => {
       })))
     }
     
-    // Apply visibility filter on the frontend
-    if (selectedFilter.value !== 'all') {
-      data = data.filter((p: any) => {
-        const isVisible = p?.is_visible ?? p?.visible ?? false
-        return selectedFilter.value === 'visible' ? isVisible : !isVisible
-      })
-    }
-    
-    // Apply confidential filter client-side
+    // Apply confidential filter client-side (must come BEFORE visibility filter)
     if (selectedFilter.value === 'confidential') {
       const beforeFilter = data.length
       console.log('🔍 Antes do filtro confidencial:', data.map(p => ({ 
@@ -215,6 +207,13 @@ const loadPublications = async () => {
       
       console.log(`📊 Filtro 'confidential' aplicado: ${beforeFilter} -> ${data.length}`)
       console.log('🔍 Depois do filtro:', data.map(p => ({ id: p.id, title: p.title })))
+    }
+    // Apply visibility filter on the frontend (ONLY if not already filtering by confidential)
+    else if (selectedFilter.value !== 'all') {
+      data = data.filter((p: any) => {
+        const isVisible = p?.is_visible ?? p?.visible ?? false
+        return selectedFilter.value === 'visible' ? isVisible : !isVisible
+      })
     }
     
     console.log('📊 Total de publicações após filtros:', data.length)
@@ -314,8 +313,18 @@ const handlePageChange = async (page: number) => {
 const handleToggleVisibility = async (publicationId: number, newVisibility: boolean) => {
   try {
     await togglePublicationVisibility(publicationId, newVisibility)
-
-
+    
+    // If filter is 'all', just update the local state without reloading
+    if (selectedFilter.value === 'all') {
+      const publication = publications.value.find(p => p.id === publicationId)
+      if (publication) {
+        publication.visible = newVisibility
+        publication.is_visible = newVisibility
+      }
+    } else {
+      // For other filters, reload to remove/add from the filtered list
+      await loadPublications()
+    }
 
     toast.add({
       title: 'Success',
@@ -337,7 +346,18 @@ const handleToggleConfidential = async (publicationId: number, newConfidential: 
   console.log('🔐 handleToggleConfidential chamado:', { publicationId, newConfidential })
   try {
     await togglePublicationConfidential(publicationId, newConfidential)
-    await loadPublications()
+    
+    // If filter is 'all', just update the local state without reloading
+    if (selectedFilter.value === 'all') {
+      const publication = publications.value.find(p => p.id === publicationId)
+      if (publication) {
+        publication.confidential = newConfidential
+        publication.is_confidential = newConfidential
+      }
+    } else {
+      // For other filters, reload to remove/add from the filtered list
+      await loadPublications()
+    }
     
     toast.add({
       title: 'Sucesso',
@@ -535,9 +555,9 @@ onMounted(async () => {
       </div>
 
       <!-- Sem resultados -->
-      <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
-        <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
-        No publications found
+      <div v-else-if="publications.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-500">
+        <UIcon name="i-lucide-inbox" class="text-5xl mb-4" />
+        <p>No publications found</p>
       </div>
 
       <!-- Lista -->
