@@ -101,6 +101,11 @@ const isAuthor = computed((): boolean => {
     props.publication.author.id === props.currentUserId
 })
 
+// Check if user can change publication visibility (author or admin/responsavel)
+const canChangeVisibility = computed(() => {
+  return isAuthor.value || canManageComments.value
+})
+
 const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
@@ -442,7 +447,7 @@ const hasFile = computed(() => {
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
-          <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm"
+          <UButton v-if="canChangeVisibility" color="secondary" variant="ghost" size="sm"
             :icon="getIsVisible ? 'i-lucide-eye' : 'i-lucide-eye-off'"
             @click="$emit('toggle-visibility', publication.id, !getIsVisible)" />
           <UBadge v-else :color="visibilityBadgeColor" variant="subtle">

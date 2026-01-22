@@ -20,7 +20,13 @@ const selectedUser = ref<UserData | null>(null)
 const selectedUserForEdit = ref<UserData | null>(null)
 const selectedUserForRoleChange = ref<UserData | null>(null)
 const selectedUserForToggle = ref<UserData | null>(null)
-const selectedUserForView = ref<UserData | null>(null)
+const selectedUserViewId = ref<number | null>(null) // Store ID instead of object
+
+// Computed property that always gets fresh user data from the users array
+const selectedUserForView = computed(() => {
+  if (!selectedUserViewId.value) return null
+  return users.value.find(u => u.id === selectedUserViewId.value) || null
+})
 
 // Use a reactive variable instead of useFetch data
 const users = ref<UserData[]>([])
@@ -238,7 +244,7 @@ function getUserActions(user: UserData) {
             ]"
           >
             <!-- Avatar/Status Indicator -->
-            <div class="flex-shrink-0 relative" @click="selectedUserForView = user">
+            <div class="flex-shrink-0 relative" @click="selectedUserViewId = user.id">
               <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <UIcon name="i-lucide-user" class="size-5 text-primary" />
               </div>
@@ -255,7 +261,7 @@ function getUserActions(user: UserData) {
             </div>
 
             <!-- User Info -->
-            <div class="flex-1 min-w-0" @click="selectedUserForView = user">
+            <div class="flex-1 min-w-0" @click="selectedUserViewId = user.id">
               <div class="flex items-center gap-2 mb-1">
                 <p :class="['font-medium text-sm truncate', user.active === false && 'text-muted']">
                   {{ user.name }}
@@ -304,7 +310,7 @@ function getUserActions(user: UserData) {
           icon="i-lucide-x"
           color="neutral"
           variant="ghost"
-          @click="selectedUserForView = null"
+          @click="selectedUserViewId = null"
         />
       </template>
     </UDashboardNavbar>
@@ -437,8 +443,9 @@ function getUserActions(user: UserData) {
 
   <UsersEditModal
     :user="selectedUserForEdit"
-    @updated="() => {
-      reloadUsers()
+    @updated="async () => {
+      await reloadUsers()
+      // No need to manually update selectedUserForView - the computed property will auto-update
       selectedUserForEdit = null
     }"
     @close="() => {
@@ -459,8 +466,9 @@ function getUserActions(user: UserData) {
 
   <UsersChangeRoleModal
     :user="selectedUserForRoleChange"
-    @updated="() => {
-      reloadUsers()
+    @updated="async () => {
+      await reloadUsers()
+      // No need to manually update selectedUserForView - the computed property will auto-update
       selectedUserForRoleChange = null
     }"
     @close="() => {
@@ -471,25 +479,11 @@ function getUserActions(user: UserData) {
   <UsersToggleActiveModal
     :user="selectedUserForToggle"
     @toggled="async () => {
-      const toggledUserId = selectedUserForToggle?.id
       selectedUserForToggle = null
-      
-      console.log('[Users Page] Before reload, users count:', users.value?.length || 0)
       
       // Reload users from server
       await reloadUsers()
-      
-      console.log('[Users Page] After reload, users count:', users.value?.length || 0)
-      console.log('[Users Page] Users data:', users.value?.map((u: UserData) => ({ id: u.id, name: u.name, active: u.active })) || [])
-      
-      // Update the view panel if it's showing the toggled user
-      if (selectedUserForView && toggledUserId === selectedUserForView.id) {
-        const updatedUser = users.value?.find((u: UserData) => u.id === toggledUserId)
-        console.log('[Users Page] Updated user from list:', updatedUser)
-        if (updatedUser) {
-          selectedUserForView = updatedUser
-        }
-      }
+      // No need to manually update selectedUserForView - the computed property will auto-update
     }"
     @close="() => {
       selectedUserForToggle = null
