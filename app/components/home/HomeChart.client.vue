@@ -38,21 +38,21 @@ const loadPublicationsByArea = async () => {
 
     const publications = Array.isArray(response) ? response : []
     
-    // Agrupar por área científica
+    // Group by scientific area
     const areaCount: Record<string, number> = {}
     publications.forEach((pub: any) => {
-      const area = pub.scientific_area || pub.scientificArea || 'Sem Área'
+      const area = pub.scientific_area || pub.scientificArea || 'No Area'
       areaCount[area] = (areaCount[area] || 0) + 1
     })
 
     data.value = Object.entries(areaCount)
       .map(([area, count]) => ({ area, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 10) // Top 10 áreas
+      .slice(0, 10) // Top 10 areas
 
     total.value = publications.length
   } catch (error) {
-    console.error('Erro ao carregar publicações por área:', error)
+    console.error('Error loading publications by area:', error)
   }
 }
 
@@ -68,7 +68,7 @@ const xTicks = (i: number) => {
     : data.value[i].area
 }
 
-const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
+const template = (d: DataRecord) => `${d.area}: ${d.count} publications`
 </script>
 
 <template>
@@ -76,10 +76,10 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          Publicações por Área Científica
+          Publications by Scientific Area
         </p>
         <p class="text-3xl text-highlighted font-semibold">
-          {{ total }} publicações
+          {{ total }} publications
         </p>
       </div>
     </template>
@@ -114,7 +114,7 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
     </VisXYContainer>
 
     <div v-else class="h-96 flex items-center justify-center text-muted">
-      <p>Sem dados para apresentar</p>
+      <p>No data available</p>
     </div>
   </UCard>
 </template>

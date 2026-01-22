@@ -242,7 +242,7 @@ onMounted(() => {
   <UDashboardPanel id="activity">
     <!-- HEADER -->
     <template #header>
-      <UDashboardNavbar title="Histórico de Atividades">
+      <UDashboardNavbar title="Activity History">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -256,11 +256,11 @@ onMounted(() => {
         <UIcon name="i-lucide-loader" class="animate-spin text-3xl text-gray-400" />
       </div>
 
-      <!-- Sem atividades -->
+      <!-- No activities -->
       <div v-else-if="activities.length === 0" class="text-center py-16 text-gray-500">
         <UIcon name="i-lucide-activity" class="mx-auto text-5xl mb-4" />
-        <p class="text-lg font-medium">Nenhuma atividade encontrada</p>
-        <p class="text-sm mt-2">O seu histórico de atividades aparecerá aqui</p>
+        <p class="text-lg font-medium">No activity found</p>
+        <p class="text-sm mt-2">Your activity history will appear here</p>
       </div>
 
       <!-- Lista de atividades -->
@@ -271,7 +271,7 @@ onMounted(() => {
           :ui="{ body: 'p-4' }"
         >
           <div class="flex items-start gap-4">
-            <!-- Ícone -->
+            <!-- Icon -->
             <div 
               class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
               :class="`bg-${getActivityColor(activity.type)}-100 dark:bg-${getActivityColor(activity.type)}-900/20`"
@@ -283,7 +283,7 @@ onMounted(() => {
               />
             </div>
 
-            <!-- Conteúdo -->
+            <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">
@@ -297,7 +297,7 @@ onMounted(() => {
                     </UBadge>
                   </div>
                   <h3 class="font-medium text-gray-900 dark:text-gray-100">
-                    {{ activity.title || activity.description || 'Atividade sem descrição' }}
+                    {{ activity.title || activity.description || 'Activity without description' }}
                   </h3>
                   <p v-if="activity.details" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     {{ activity.details }}
@@ -317,7 +317,7 @@ onMounted(() => {
         </UCard>
       </div>
 
-      <!-- Paginação -->
+      <!-- Pagination -->
       <div v-if="activities.length > 0" class="flex justify-center pt-6">
         <UPagination 
           :model-value="currentPage"
@@ -328,9 +328,9 @@ onMounted(() => {
         />
       </div>
 
-      <!-- Info de paginação -->
+      <!-- Pagination info -->
       <div v-if="activities.length > 0" class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-        Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalActivities) }} de {{ totalActivities }} atividades
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalActivities) }} of {{ totalActivities }} activities
       </div>
     </template>
   </UDashboardPanel>

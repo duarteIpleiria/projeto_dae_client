@@ -119,7 +119,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <UInput v-model="state.title" class="w-full" placeholder="e.g., CNN model for tumor detection" />
         </UFormField>
 
-        <!-- Área Científica -->
+        <!-- Scientific area -->
         <UFormField label="Scientific Area" name="scientific_area">
           <UInput v-model="state.scientific_area" class="w-full" placeholder="e.g., Data Science, Materials Science, Biology" />
         </UFormField>
@@ -129,10 +129,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <UCheckbox v-model="state.is_visible" label="Publication visible" />
         </UFormField>
 
-        <!-- Confidencial (todos os utilizadores autenticados) -->
-        <UFormField v-if="isAdminOrResponsavel" label="Confidencialidade" name="is_confidential">
-          <UCheckbox v-model="state.is_confidential" label="Publicação confidencial (apenas utilizadores autenticados)" />
-          <p class="text-xs text-gray-500 mt-1">Visitantes não autenticados não poderão ver esta publicação</p>
+        <!-- Confidential (all authenticated users) -->
+        <UFormField v-if="isAdminOrResponsavel" label="Confidentiality" name="is_confidential">
+          <UCheckbox v-model="state.is_confidential" label="Confidential publication (authenticated users only)" />
+          <p class="text-xs text-gray-500 mt-1">Unauthenticated visitors will not see this publication</p>
         </UFormField>
 
        
@@ -142,13 +142,13 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               <div
                 class="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center transition hover:border-primary-500 hover:bg-primary-50 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800"
                 @click="openFileDialog()">
-                <!-- Ícone -->
+                <!-- Icon -->
                 <div
                   class="flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-600 transition group-hover:bg-primary-200 dark:bg-primary-900 dark:text-primary-400">
                   <UIcon name="i-lucide-upload-cloud" class="h-7 w-7" />
                 </div>
 
-                <!-- Texto -->
+                <!-- Text -->
                 <div>
                   <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Click or drag the file here
@@ -158,7 +158,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                   </p>
                 </div>
 
-                <!-- Ficheiro selecionado -->
+                <!-- Selected file -->
                 <div v-if="file"
                   class="mt-3 flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm dark:bg-gray-800">
                   <UIcon :name="file.type === 'application/pdf'
@@ -173,7 +173,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                     {{ (file.size / 1024 / 1024).toFixed(2) }} MB
                   </span>
 
-                  <!-- Botão remover -->
+                  <!-- Remove button -->
                   <UButton icon="i-lucide-x" size="xs" color="error" variant="ghost" class="ml-1"
                     @click.stop="file = null" />
                 </div>
@@ -182,7 +182,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           </UFileUpload>
         </UFormField>
 
-        <!-- Botões -->
+        <!-- Buttons -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
           <UButton label="Cancel" color="secondary" variant="ghost" type="button" @click="open = false" />
           <UButton label="Create" color="primary" type="submit" :loading="loading" />
