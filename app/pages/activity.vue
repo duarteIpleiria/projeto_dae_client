@@ -38,8 +38,14 @@ const getActivityIcon = (type: string) => {
     case 'DELETE_TAG':
       return 'i-lucide-trash'
     case 'HIDE_TAG':
+    case 'HIDE_PUBLICATION':
+    case 'HIDE_COMMENT':
+    case 'HIDE_ALL_COMMENTS':
       return 'i-lucide-eye-off'
     case 'SHOW_TAG':
+    case 'SHOW_PUBLICATION':
+    case 'SHOW_COMMENT':
+    case 'SHOW_ALL_COMMENTS':
       return 'i-lucide-eye'
     case 'comment':
       return 'i-lucide-message-circle'
@@ -79,6 +85,10 @@ const getActivityColor = (type: string) => {
     case 'CREATE_TAG':
     case 'CREATE_USER':
     case 'ACTIVATE_USER':
+    case 'SHOW_TAG':
+    case 'SHOW_PUBLICATION':
+    case 'SHOW_COMMENT':
+    case 'SHOW_ALL_COMMENTS':
       return 'green'
     case 'edit':
     case 'ASSOCIATE_TAG':
@@ -96,9 +106,10 @@ const getActivityColor = (type: string) => {
     case 'DELETE_USER':
     case 'DEACTIVATE_USER':
     case 'HIDE_TAG':
+    case 'HIDE_PUBLICATION':
+    case 'HIDE_COMMENT':
+    case 'HIDE_ALL_COMMENTS':
       return 'red'
-    case 'SHOW_TAG':
-      return 'green'
     case 'comment':
       return 'cyan'
     case 'rating':
@@ -140,6 +151,18 @@ const getActivityLabel = (type: string) => {
       return 'Tag Hidden'
     case 'SHOW_TAG':
       return 'Tag Shown'
+    case 'HIDE_PUBLICATION':
+      return 'Publication Hidden'
+    case 'SHOW_PUBLICATION':
+      return 'Publication Shown'
+    case 'HIDE_COMMENT':
+      return 'Comment Hidden'
+    case 'SHOW_COMMENT':
+      return 'Comment Shown'
+    case 'HIDE_ALL_COMMENTS':
+      return 'All Comments Hidden'
+    case 'SHOW_ALL_COMMENTS':
+      return 'All Comments Shown'
     case 'ASSOCIATE_TAG':
       return 'Tag Associated'
     case 'DISSOCIATE_TAG':
