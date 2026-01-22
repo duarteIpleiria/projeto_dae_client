@@ -22,39 +22,39 @@ const selectedUserForRoleChange = ref<UserData | null>(null)
 const selectedUserForToggle = ref<UserData | null>(null)
 const selectedUserForView = ref<UserData | null>(null)
 
-const { data, error, refresh, status } = useFetch(`${api}/users`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-  onResponseError({ response }) {
-    console.error('[Users Page] API Error:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: response._data
-    })
-    
-    // Check if it's the Hibernate lazy initialization error
-    if (response._data?.includes('subscribedTags') && response._data?.includes('no Session')) {
-      toast.add({
-        title: 'Backend Configuration Error',
-        description: 'The backend User entity needs to exclude subscribedTags from the /users endpoint. Contact the backend team.',
-        color: 'error',
-        icon: 'i-lucide-alert-triangle',
-        timeout: 8000
-      })
-    } else {
-      toast.add({
-        title: 'Error loading users',
-        description: response._data?.message || 'Failed to load users from server',
-        color: 'error',
-        icon: 'i-lucide-alert-circle',
-        timeout: 5000
-      })
-    }
-  },
-});
+// Use a reactive variable instead of useFetch data
+const users = ref<UserData[]>([])
+const status = ref<'idle' | 'pending' | 'success' | 'error'>('pending')
 
-const users = computed(() => (data.value as any) || []);
+// Function to load users from server
+async function reloadUsers() {
+  try {
+    console.log('[Users Page] Fetching users from:', `${api}/users`)
+    const freshData = await $fetch<UserData[]>(`${api}/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+    console.log('[Users Page] Fetched users:', freshData?.length, freshData)
+    users.value = freshData || []
+    status.value = 'success'
+  } catch (err) {
+    console.error('[Users Page] Error reloading users:', err)
+    status.value = 'error'
+    toast.add({
+      title: 'Error loading users',
+      description: 'Failed to load users from server',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+      timeout: 5000
+    })
+  }
+}
+
+// Load users on mount
+onMounted(() => {
+  reloadUsers()
+})
 
 // Search filter for sidebar
 const searchQuery = ref('')
@@ -133,9 +133,7 @@ function getUserActions(user: UserData) {
     label: isActive ? 'Desativar utilizador' : 'Ativar utilizador',
     icon: isActive ? 'i-lucide-user-x' : 'i-lucide-user-check',
     onSelect() {
-      console.log('Desativar/Ativar clicked for user:', user.name, user.id)
       selectedUserForToggle.value = user
-      console.log('selectedUserForToggle set to:', selectedUserForToggle.value)
     }
   }] : []
 
@@ -175,7 +173,7 @@ function getUserActions(user: UserData) {
       </template>
 
       <template #right>
-        <UsersAddModal @created="refresh" />
+        <UsersAddModal @created="reloadUsers" />
       </template>
     </UDashboardNavbar>
 
@@ -440,7 +438,7 @@ function getUserActions(user: UserData) {
   <UsersEditModal
     :user="selectedUserForEdit"
     @updated="() => {
-      refresh()
+      reloadUsers()
       selectedUserForEdit = null
     }"
     @close="() => {
@@ -451,7 +449,7 @@ function getUserActions(user: UserData) {
   <UsersDeleteModal
     :user="selectedUser"
     @deleted="() => {
-      refresh()
+      reloadUsers()
       selectedUser = null
     }"
     @close="() => {
@@ -462,7 +460,7 @@ function getUserActions(user: UserData) {
   <UsersChangeRoleModal
     :user="selectedUserForRoleChange"
     @updated="() => {
-      refresh()
+      reloadUsers()
       selectedUserForRoleChange = null
     }"
     @close="() => {
@@ -472,9 +470,26 @@ function getUserActions(user: UserData) {
 
   <UsersToggleActiveModal
     :user="selectedUserForToggle"
-    @toggled="() => {
-      refresh()
+    @toggled="async () => {
+      const toggledUserId = selectedUserForToggle?.id
       selectedUserForToggle = null
+      
+      console.log('[Users Page] Before reload, users count:', users.value?.length || 0)
+      
+      // Reload users from server
+      await reloadUsers()
+      
+      console.log('[Users Page] After reload, users count:', users.value?.length || 0)
+      console.log('[Users Page] Users data:', users.value?.map((u: UserData) => ({ id: u.id, name: u.name, active: u.active })) || [])
+      
+      // Update the view panel if it's showing the toggled user
+      if (selectedUserForView && toggledUserId === selectedUserForView.id) {
+        const updatedUser = users.value?.find((u: UserData) => u.id === toggledUserId)
+        console.log('[Users Page] Updated user from list:', updatedUser)
+        if (updatedUser) {
+          selectedUserForView = updatedUser
+        }
+      }
     }"
     @close="() => {
       selectedUserForToggle = null

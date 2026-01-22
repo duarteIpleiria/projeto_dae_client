@@ -30,9 +30,7 @@ const actionTextCapitalized = computed(() => isActive.value ? 'Desativar' : 'Ati
 watch(
   () => props.user,
   (user) => {
-    console.log('ToggleActiveModal - user prop changed:', user)
     if (user) {
-      console.log('Opening toggle modal for user:', user.name, 'Active:', user.active)
       open.value = true
     } else {
       open.value = false
@@ -52,19 +50,25 @@ async function onSubmit() {
   if (!props.user) return
 
   const newActiveStatus = !isActive.value
-  const endpoint = newActiveStatus ? 'activate' : 'deactivate'
-
-  console.log('Toggling user:', props.user.id, 'from', isActive.value, 'to', newActiveStatus)
-  console.log('Endpoint:', `${api}/users/${props.user.id}/${endpoint}`)
-
-  const { data, error } = await useFetch(`${api}/users/${props.user.id}/${endpoint}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+  console.log('[ToggleActiveModal] Toggling user:', {
+    userId: props.user.id,
+    currentStatus: isActive.value,
+    newStatus: newActiveStatus
   })
 
-  console.log('Response:', { data: data.value, error: error.value })
+  const { data, error } = await useFetch(`${api}/users/${props.user.id}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: {
+      name: props.user.name,
+      email: props.user.email,
+      role: props.user.role,
+      active: newActiveStatus
+    }
+  })
 
   if (error.value) {
     console.error('Error toggling user status:', error.value)
@@ -77,6 +81,8 @@ async function onSubmit() {
   }
 
   const response = data.value as any
+  console.log('[ToggleActiveModal] Backend response:', response)
+  
   toast.add({
     title: 'Sucesso',
     description: `Utilizador ${newActiveStatus ? 'ativado' : 'desativado'} com sucesso`,
