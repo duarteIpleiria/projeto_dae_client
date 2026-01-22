@@ -41,6 +41,8 @@ interface Publication {
   average_rating?: number
   ratingsCount?: number
   ratings_count?: number
+  userRating?: number | null
+  user_rating?: number | null
   comments_count?: number
   comments?: Comment[]
   tags: Array<{ id: number; name: string; visible?: boolean }>
@@ -81,6 +83,11 @@ const canViewHistory = computed(() => {
   if (!authStore.user) return false
   const role = authStore.user?.role
   return role === 'Colaborador' || role === 'Responsavel' || role === 'Administrador'
+})
+
+// Get user's rating for this publication
+const userRating = computed(() => {
+  return props.publication.userRating ?? props.publication.user_rating ?? null
 })
 
 // Filter comments to display based on visibility
@@ -791,6 +798,9 @@ const hasFile = computed(() => {
           <UIcon name="i-lucide-star" class="w-4 h-4 text-yellow-500" />
           <span class="font-medium">{{ getAverageRating.toFixed(1) }}</span>
           <span class="text-gray-500">({{ getRatingsCount }})</span>
+          <span v-if="userRating !== null && !isAuthor" class="ml-2 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-medium">
+            Your rating: {{ userRating }}
+          </span>
         </div>
         <div v-if="visibleComments.length > 0" class="flex items-center gap-1">
           <UIcon name="i-lucide-message-circle" class="w-4 h-4 text-blue-500" />

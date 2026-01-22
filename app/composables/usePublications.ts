@@ -308,7 +308,9 @@ export const usePublications = () => {
           ...publications.value[index],
           ...(response || {}),
           average_rating: (response as any)?.average_rating ?? (response as any)?.averageRating ?? publications.value[index].average_rating,
-          ratings_count: (response as any)?.ratings_count ?? (response as any)?.ratingsCount ?? publications.value[index].ratings_count
+          ratings_count: (response as any)?.ratings_count ?? (response as any)?.ratingsCount ?? publications.value[index].ratings_count,
+          userRating: rating, // Update the user's rating immediately
+          user_rating: rating // Also update the snake_case version
         })
       }
 
