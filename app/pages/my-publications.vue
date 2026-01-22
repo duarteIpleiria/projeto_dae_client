@@ -36,16 +36,6 @@ const selectedTag = ref<number | null>(null)
 const tags = ref<any[]>([])
 const tagsLoading = ref(false)
 
-// Check if user can see hidden tags
-const canSeeHiddenTags = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
-})
-
-// Filter tags for dropdown (exclude hidden tags for non-admin users)
-const visibleTagsForFilter = computed(() => {
-  return tags.value.filter((tag: any) => canSeeHiddenTags.value || tag.visible !== false)
-})
-
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const totalItems = ref(0)
@@ -70,8 +60,16 @@ const loadTags = async () => {
     }) as any
 
     console.log('✅ Tags carregadas:', response)
-    tags.value = (Array.isArray(response) ? response : (response?.data || []))
-    console.log('📋 Tags formatadas:', tags.value)
+    const allTags = (Array.isArray(response) ? response : (response?.data || []))
+    
+    // Filtrar tags ocultas para TODOS os usuários (incluindo admin)
+    // Tags ocultas só devem aparecer na página de gestão de tags
+    tags.value = allTags.filter((tag: any) => {
+      console.log('🏷️ Filtrando tag:', tag.name, 'visible:', tag.visible)
+      return tag.visible === true || tag.visible === undefined || tag.visible === null
+    })
+    
+    console.log('📋 Tags formatadas (após filtro):', tags.value)
   } catch (error) {
     console.error('❌ Erro ao carregar tags:', error)
   } finally {
@@ -248,7 +246,7 @@ onMounted(() => {
             v-model="selectedTag" 
             :items="[
               { value: null, label: 'Todas as tags' },
-              ...visibleTagsForFilter.map(tag => ({ value: tag.id, label: tag.name }))
+              ...tags.map(tag => ({ value: tag.id, label: tag.name }))
             ]"
             placeholder="Filtrar por tag"
             :loading="tagsLoading"

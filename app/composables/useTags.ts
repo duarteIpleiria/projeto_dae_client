@@ -29,7 +29,9 @@ export const useTags = () => {
       })
 
       // Filter out hidden tags unless explicitly requested
-      tags.value = includeHidden ? response : response.filter(tag => tag.visible !== false)
+      tags.value = includeHidden 
+        ? response 
+        : response.filter(tag => tag.visible === true || tag.visible === undefined || tag.visible === null)
       
       return tags.value
     } catch (e: any) {

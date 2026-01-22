@@ -66,11 +66,6 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 
-// Check if user can see hidden tags
-const canSeeHiddenTags = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
-})
-
 // Check if user can manage comment visibility
 const canManageComments = computed(() => {
   const canManage = authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
@@ -78,9 +73,13 @@ const canManageComments = computed(() => {
   return canManage
 })
 
-// Filter tags to display (exclude hidden tags for non-admin users)
+// Filter tags to display (exclude hidden tags for ALL users)
+// Hidden tags should only be visible in the tags management page
 const visibleTags = computed(() => {
-  return props.publication.tags.filter(tag => canSeeHiddenTags.value || tag.visible !== false)
+  return props.publication.tags.filter(tag => {
+    // Filtrar tags ocultas para TODOS os usuários (incluindo admin)
+    return tag.visible === true || tag.visible === undefined || tag.visible === null
+  })
 })
 
 const isAuthor = computed((): boolean => {

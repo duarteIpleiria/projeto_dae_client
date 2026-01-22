@@ -31,11 +31,22 @@ const { data: userData, refresh: refreshUser } = await useFetch(`${api}/auth/use
 
 const tags = computed(() => (data.value as any) || []);
 
+// Check if user can manage tag visibility (Administrador or Responsavel)
+const canManageVisibility = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
 // Initialize tags store with server data on mount
+// Filter out hidden tags for non-admin users
 watch(userData, (newData) => {
   const user = newData as any
   if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
-    tagsStore.setSubscribedTags(user.subscribedTags)
+    // Filtrar tags ocultas para usuários que não são admin/responsavel
+    const subscribedTags = canManageVisibility.value 
+      ? user.subscribedTags 
+      : user.subscribedTags.filter((tag: Tag) => tag.visible === true || tag.visible === undefined || tag.visible === null)
+    
+    tagsStore.setSubscribedTags(subscribedTags)
   }
 }, { immediate: true })
 
@@ -44,14 +55,28 @@ const subscribedTagIds = computed(() => {
   return tagsStore.subscribedTagIds
 })
 
-// Check if user can manage tag visibility (Administrador or Responsavel)
-const canManageVisibility = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
-})
+// Clean up hidden tags from store for non-admin users when tags are loaded
+watch([tags, canManageVisibility], ([allTags, canManage]) => {
+  if (!canManage && allTags.length > 0) {
+    // Para usuários normais, remover do store qualquer tag que esteja oculta
+    const currentSubscribedIds = tagsStore.subscribedTagIds
+    const hiddenTagIds = allTags
+      .filter((tag: Tag) => tag.visible === false)
+      .map((tag: Tag) => tag.id)
+    
+    // Remover tags ocultas do store
+    hiddenTagIds.forEach(tagId => {
+      if (currentSubscribedIds.includes(tagId)) {
+        console.log('[TAGS] Removing hidden tag from store:', tagId)
+        tagsStore.removeSubscribedTag(tagId)
+      }
+    })
+  }
+}, { immediate: true })
 
 // Separate visible and hidden tags
 const visibleTags = computed(() => {
-  return tags.value.filter((tag: Tag) => tag.visible !== false)
+  return tags.value.filter((tag: Tag) => tag.visible === true || tag.visible === undefined || tag.visible === null)
 })
 
 const hiddenTags = computed(() => {
