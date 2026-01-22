@@ -413,6 +413,27 @@ const handlePublicationCreated = async () => {
   await loadPublications()
 }
 
+// ===== COMMENT ADDED =====
+const handleCommentAdded = (publicationId: number, comment: any) => {
+  console.log('💬 Comment added to publication:', publicationId, comment)
+  
+  // Find the publication and add the comment to its comments array
+  const publication = publications.value.find(p => p.id === publicationId)
+  if (publication) {
+    if (!publication.comments) {
+      publication.comments = []
+    }
+    publication.comments.push(comment)
+    
+    // Update comments count
+    if (publication.comments_count !== undefined) {
+      publication.comments_count++
+    } else {
+      publication.comments_count = publication.comments.length
+    }
+  }
+}
+
 // ===== INITIALIZE =====
 onMounted(async () => {
   console.log('Component mounted, loading publications and tags...')
