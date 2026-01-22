@@ -13,7 +13,6 @@ import type { Row } from '@tanstack/table-core'
 import type { UserData } from '~/types'
 
 const UButton = resolveComponent('UButton')
-const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
 
@@ -59,16 +58,43 @@ const users = computed(() => (data.value as any) || []);
 
 // Search filter for sidebar
 const searchQuery = ref('')
+const selectedRole = ref<string | null>(null)
+const selectedStatus = ref<string | null>(null)
+
 const filteredUsers = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return users.value
+  let filtered = users.value
+
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter((user: UserData) => 
+      user.name.toLowerCase().includes(query) || 
+      user.email.toLowerCase().includes(query) ||
+      user.role.toLowerCase().includes(query)
+    )
   }
-  const query = searchQuery.value.toLowerCase()
-  return users.value.filter((user: UserData) => 
-    user.name.toLowerCase().includes(query) || 
-    user.email.toLowerCase().includes(query) ||
-    user.role.toLowerCase().includes(query)
-  )
+
+  // Filter by role
+  if (selectedRole.value) {
+    filtered = filtered.filter((user: UserData) => user.role === selectedRole.value)
+  }
+
+  // Filter by status
+  if (selectedStatus.value) {
+    if (selectedStatus.value === 'active') {
+      filtered = filtered.filter((user: UserData) => user.active !== false)
+    } else if (selectedStatus.value === 'inactive') {
+      filtered = filtered.filter((user: UserData) => user.active === false)
+    }
+  }
+
+  return filtered
+})
+
+// Get unique roles for filter dropdown
+const availableRoles = computed(() => {
+  const roles = [...new Set(users.value.map((u: UserData) => u.role))]
+  return roles.map(role => ({ value: role, label: role }))
 })
 
 function getUserActions(user: UserData) {
@@ -76,59 +102,57 @@ function getUserActions(user: UserData) {
   const isAdmin = authStore.user.role === 'Administrador'
   const isActive = user.active !== false
 
-  return [
-    {
-      type: 'label',
-      label: 'Actions'
-    },
-    {
-      label: 'Copy email',
-      icon: 'i-lucide-copy',
-      onSelect() {
-        navigator.clipboard.writeText(user.email)
-        toast.add({
-          title: 'Copied to clipboard',
-          description: 'Email copied to clipboard'
-        })
-      }
-    },
-    ...(isAdmin && !isOwnAccount ? [
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Edit user',
-        icon: 'i-lucide-pencil',
-        onSelect() {
-          selectedUserForEdit.value = user
-        }
-      },
-      {
-        label: 'Change Role',
-        icon: 'i-lucide-user-cog',
-        onSelect() {
-          selectedUserForRoleChange.value = user
-        }
-      },
-      {
-        label: isActive ? 'Desativar utilizador' : 'Ativar utilizador',
-        icon: isActive ? 'i-lucide-user-x' : 'i-lucide-user-check',
-        onSelect() {
-          selectedUserForToggle.value = user
-        }
-      }
-    ] : []),
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Delete user',
-      icon: 'i-lucide-trash',
-      color: 'error',
-      onSelect() {
-        selectedUser.value = user
-      }
+  const baseActions = [{
+    type: 'label',
+    label: 'Actions'
+  }, {
+    label: 'Copy email',
+    icon: 'i-lucide-copy',
+    onSelect() {
+      navigator.clipboard.writeText(user.email)
+      toast.add({
+        title: 'Copied to clipboard',
+        description: 'Email copied to clipboard'
+      })
     }
+  }]
+
+  const adminActions = isAdmin && !isOwnAccount ? [{
+    label: 'Edit user',
+    icon: 'i-lucide-pencil',
+    onSelect() {
+      selectedUserForEdit.value = user
+    }
+  }, {
+    label: 'Change Role',
+    icon: 'i-lucide-user-cog',
+    onSelect() {
+      selectedUserForRoleChange.value = user
+    }
+  }, {
+    label: isActive ? 'Desativar utilizador' : 'Ativar utilizador',
+    icon: isActive ? 'i-lucide-user-x' : 'i-lucide-user-check',
+    onSelect() {
+      console.log('Desativar/Ativar clicked for user:', user.name, user.id)
+      selectedUserForToggle.value = user
+      console.log('selectedUserForToggle set to:', selectedUserForToggle.value)
+    }
+  }] : []
+
+  const deleteAction = [{
+    label: 'Delete user',
+    icon: 'i-lucide-trash',
+    color: 'error',
+    onSelect() {
+      selectedUser.value = user
+    }
+  }]
+
+  // UDropdownMenu expects array of arrays (grouped items)
+  return [
+    baseActions,
+    ...(adminActions.length > 0 ? [adminActions] : []),
+    deleteAction
   ]
 }
 </script>
@@ -157,14 +181,39 @@ function getUserActions(user: UserData) {
 
     <!-- Sidebar User List -->
     <div class="flex flex-col h-full">
-      <!-- Search -->
-      <div class="p-3 border-b border-default">
+      <!-- Search and Filters -->
+      <div class="p-3 border-b border-default space-y-2">
         <UInput 
           v-model="searchQuery" 
           icon="i-lucide-search" 
           placeholder="Search users..." 
           size="sm"
         />
+        
+        <div class="flex gap-2">
+          <USelect 
+            v-model="selectedRole"
+            :items="[
+              { value: null, label: 'All Roles' },
+              ...availableRoles
+            ]"
+            placeholder="Filter by role"
+            size="sm"
+            class="flex-1"
+          />
+          
+          <USelect 
+            v-model="selectedStatus"
+            :items="[
+              { value: null, label: 'All Status' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' }
+            ]"
+            placeholder="Filter by status"
+            size="sm"
+            class="flex-1"
+          />
+        </div>
       </div>
 
       <!-- User List -->
@@ -182,17 +231,16 @@ function getUserActions(user: UserData) {
         </div>
 
         <div v-else class="divide-y divide-default">
-          <button
+          <div
             v-for="user in filteredUsers"
             :key="user.id"
             :class="[
-              'w-full text-left p-4 hover:bg-muted/50 transition-colors flex items-start gap-3',
+              'w-full p-4 hover:bg-muted/50 transition-colors flex items-start gap-3 cursor-pointer',
               selectedUserForView?.id === user.id && 'bg-muted'
             ]"
-            @click="selectedUserForView = user"
           >
             <!-- Avatar/Status Indicator -->
-            <div class="flex-shrink-0 relative">
+            <div class="flex-shrink-0 relative" @click="selectedUserForView = user">
               <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center">
                 <UIcon name="i-lucide-user" class="size-5 text-primary" />
               </div>
@@ -203,13 +251,13 @@ function getUserActions(user: UserData) {
               />
               <div 
                 v-else
-                class="absolute bottom-0 right-0 size-3 rounded-full bg-neutral-400 border-2 border-background"
+                class="absolute bottom-0 right-0 size-3 rounded-full bg-error border-2 border-background"
                 title="Inactive"
               />
             </div>
 
             <!-- User Info -->
-            <div class="flex-1 min-w-0">
+            <div class="flex-1 min-w-0" @click="selectedUserForView = user">
               <div class="flex items-center gap-2 mb-1">
                 <p :class="['font-medium text-sm truncate', user.active === false && 'text-muted']">
                   {{ user.name }}
@@ -234,19 +282,17 @@ function getUserActions(user: UserData) {
             </div>
 
             <!-- Actions Dropdown -->
-            <UDropdownMenu
-              :items="getUserActions(user)"
-              @click.stop
-            >
-              <UButton
-                icon="i-lucide-ellipsis-vertical"
-                color="neutral"
-                variant="ghost"
-                size="xs"
-                @click.stop
-              />
-            </UDropdownMenu>
-          </button>
+            <div class="flex-shrink-0">
+              <UDropdownMenu :items="getUserActions(user)">
+                <UButton
+                  icon="i-lucide-ellipsis-vertical"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                />
+              </UDropdownMenu>
+            </div>
+          </div>
         </div>
       </div>
     </div>
