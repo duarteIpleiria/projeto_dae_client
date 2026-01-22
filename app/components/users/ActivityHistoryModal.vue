@@ -88,6 +88,22 @@ const getActivityIcon = (type: string) => {
     'COMMENT': 'i-lucide-message-square',
     'SUBSCRIBE_TAG': 'i-lucide-tag',
     'UNSUBSCRIBE_TAG': 'i-lucide-tag',
+    'CREATE_TAG': 'i-lucide-tag',
+    'DELETE_TAG': 'i-lucide-trash-2',
+    'HIDE_TAG': 'i-lucide-eye-off',
+    'SHOW_TAG': 'i-lucide-eye',
+    'ASSOCIATE_TAG': 'i-lucide-link',
+    'DISSOCIATE_TAG': 'i-lucide-unlink',
+    'UPDATE_NAME': 'i-lucide-user-pen',
+    'UPDATE_EMAIL': 'i-lucide-mail',
+    'UPDATE_PASSWORD': 'i-lucide-key',
+    'PASSWORD_RESET_REQUEST': 'i-lucide-key-round',
+    'CREATE_USER': 'i-lucide-user-plus',
+    'EDIT_USER': 'i-lucide-user-pen',
+    'DELETE_USER': 'i-lucide-user-minus',
+    'ACTIVATE_USER': 'i-lucide-user-check',
+    'DEACTIVATE_USER': 'i-lucide-user-x',
+    'CHANGE_USER_ROLE': 'i-lucide-user-cog',
     'ROLE_CHANGED': 'i-lucide-user-cog',
     'ACCOUNT_ACTIVATED': 'i-lucide-user-check',
     'ACCOUNT_DEACTIVATED': 'i-lucide-user-x'
@@ -96,8 +112,8 @@ const getActivityIcon = (type: string) => {
 }
 
 const getActivityColor = (type: string) => {
-  if (type.includes('DELETE') || type.includes('DEACTIVATE')) return 'error'
-  if (type.includes('CREATE') || type.includes('ACTIVATE')) return 'success'
+  if (type.includes('DELETE') || type.includes('DEACTIVATE') || type.includes('HIDE')) return 'error'
+  if (type.includes('CREATE') || type.includes('ACTIVATE') || type.includes('SHOW')) return 'success'
   if (type.includes('EDIT') || type.includes('CHANGE')) return 'warning'
   return 'neutral'
 }
