@@ -100,37 +100,58 @@ const loadPublications = async () => {
 
     let response: any
 
-    // Se sortBy está definido, usa ordenação, senão pega ordem padrão da API
-    if (sortBy.value) {
-      response = await $fetch(`${api}/posts/sort`, {
-        method: 'POST',
-        headers: token ? {
+    // ===== CRITICAL FIX: Use different endpoint for hidden publications =====
+    if (selectedFilter.value === 'hidden') {
+      // Use /hidden-content endpoint for hidden publications
+      const params = new URLSearchParams({
+        type: 'publications',
+        page: currentPage.value.toString(),
+        limit: itemsPerPage.value.toString(),
+        sortBy: sortBy.value || 'updatedAt',
+        order: sortOrder.value || 'desc'
+      })
+
+      response = await $fetch(`${api}/hidden-content?${params}`, {
+        headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
           'Accept': 'application/json; charset=UTF-8',
           'Accept-Charset': 'UTF-8'
-        } : {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        },
-        body: {
-          sort_by: sortBy.value,
-          order: sortOrder.value
         }
       })
+      
+      console.log('📊 Hidden content response:', response)
     } else {
-      // Buscar sem ordenação (ordem padrão da API)
-      response = await $fetch(`${api}/posts`, {
-        headers: token ? {
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        } : {
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        }
-      })
+      // For 'all' and 'visible' filters, use normal /posts endpoint
+      if (sortBy.value) {
+        response = await $fetch(`${api}/posts/sort`, {
+          method: 'POST',
+          headers: token ? {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Accept-Charset': 'UTF-8'
+          } : {
+            'Content-Type': 'application/json; charset=UTF-8',
+            'Accept': 'application/json; charset=UTF-8',
+            'Accept-Charset': 'UTF-8'
+          },
+          body: {
+            sort_by: sortBy.value,
+            order: sortOrder.value
+          }
+        })
+      } else {
+        response = await $fetch(`${api}/posts`, {
+          headers: token ? {
+            Authorization: `Bearer ${token}`,
+            'Accept': 'application/json; charset=UTF-8',
+            'Accept-Charset': 'UTF-8'
+          } : {
+            'Accept': 'application/json; charset=UTF-8',
+            'Accept-Charset': 'UTF-8'
+          }
+        })
+      }
     }
 
     console.log('Resposta completa:', response)
@@ -138,16 +159,22 @@ const loadPublications = async () => {
     // Processar dados
     let data = Array.isArray(response) ? response : (response?.data || [])
     
+    console.log('📊 Dados recebidos do backend:', data.length, 'publicações')
+    console.log('📊 Primeiras 3 publicações (raw):', data.slice(0, 3))
+    
     // Normalizar publicações PRIMEIRO
     data = data.map((p: any) => {
       const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
+      const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
+      
+      console.log(`📝 Publicação ${p.id} (${p.title}): isVisible=${p.isVisible}, is_visible=${p.is_visible}, visible=${p.visible} -> normalizado=${isVisible}`)
       
       return {
         ...p,
         average_rating: p?.average_rating ?? p?.averageRating ?? 0,
         ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
         comments_count: commentsCount,
-        is_visible: p?.is_visible ?? p?.visible ?? false,
+        is_visible: isVisible,
         comments: p?.comments || []
       }
     })
@@ -160,13 +187,26 @@ const loadPublications = async () => {
       })))
     }
     
-    // Aplicar filtro de visibilidade no frontend
-    if (selectedFilter.value !== 'all') {
+    console.log('📊 Dados recebidos:', data.length, 'publicações')
+    console.log('📊 Filtro selecionado:', selectedFilter.value)
+    
+    // ===== REMOVED CLIENT-SIDE FILTERING =====
+    // The backend now returns the correct data based on selectedFilter
+    // - For 'hidden': uses /hidden-content endpoint (returns only hidden)
+    // - For 'visible': uses /posts endpoint and will be filtered server-side (future)
+    // - For 'all': uses /posts endpoint (returns all)
+    
+    // Apply visible filter client-side only when needed (since backend doesn't support it yet)
+    if (selectedFilter.value === 'visible') {
+      const beforeFilter = data.length
       data = data.filter((p: any) => {
-        const isVisible = p?.is_visible ?? p?.visible ?? false
-        return selectedFilter.value === 'visible' ? isVisible : !isVisible
+        const isVisible = p?.is_visible ?? p?.visible ?? true
+        return isVisible
       })
+      console.log(`📊 Filtro 'visible' aplicado: ${beforeFilter} -> ${data.length}`)
     }
+    
+    console.log('📊 Total de publicações após filtros:', data.length)
 
     // Aplicar filtro de tag no frontend
     if (selectedTag.value !== null) {
@@ -196,8 +236,9 @@ const loadPublications = async () => {
 }
 
 // ===== WATCHERS - DEVEM VIR DEPOIS DAS FUNÇÕES =====
-watch(selectedFilter, async (newFilter) => {
-  console.log('🔔 Filtro de visibilidade mudou para:', newFilter)
+watch(selectedFilter, async (newFilter, oldFilter) => {
+  console.log('🔔 Filtro de visibilidade mudou de:', oldFilter, 'para:', newFilter)
+  console.log('🔔 Tipo do filtro:', typeof newFilter, 'Valor:', newFilter)
   currentPage.value = 1
   await loadPublications()
 })
@@ -234,7 +275,8 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
   try {
     await togglePublicationVisibility(publicationId, newVisibility)
 
-
+    // Recarregar publicações para atualizar a lista
+    await loadPublications()
 
     toast.add({
       title: 'Sucesso',
@@ -340,8 +382,8 @@ onMounted(async () => {
               { value: 'hidden', label: 'Ocultas' }
             ]" 
             placeholder="Filtrar por visibilidade"
-            clearable
           />
+          
 
           <!-- Tags -->
           <USelect 
@@ -387,9 +429,9 @@ onMounted(async () => {
       </div>
 
       <!-- Sem resultados -->
-      <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
-        <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
-        Nenhuma publicação encontrada
+      <div v-else-if="publications.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-500">
+        <UIcon name="i-lucide-inbox" class="text-5xl mb-4" />
+        <p class="text-center">Nenhuma publicação encontrada</p>
       </div>
 
       <!-- Lista -->
