@@ -96,14 +96,15 @@ const loadPublications = async () => {
 
     let response: any
 
-    // If there are search criteria, use the search endpoint
+    // If there are search criteria, use the search endpoint (only for authenticated users)
     const hasSearchCriteria = (searchTitle.value && searchTitle.value.trim()) || 
                               (searchAuthorId.value && searchAuthorId.value.trim()) || 
                               (searchScientificArea.value && searchScientificArea.value.trim()) || 
                               (searchDateFrom.value && searchDateFrom.value.trim()) || 
                               (searchDateTo.value && searchDateTo.value.trim())
     
-    if (hasSearchCriteria) {
+    // Search is only available for authenticated users
+    if (hasSearchCriteria && token) {
       const searchBody: any = {}
       if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
       if (searchAuthorId.value && searchAuthorId.value.trim()) {
@@ -472,8 +473,8 @@ onMounted(async () => {
     </template>
 
     <!-- BODY -->
-    <template #body>      <!-- Search -->
-      <div class="mb-6 space-y-4">
+    <template #body>      <!-- Search (only for authenticated users) -->
+      <div v-if="user" class="mb-6 space-y-4">
         <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <UIcon name="i-lucide-search" class="w-4 h-4" />
           <span>Search Publications</span>
