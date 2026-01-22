@@ -73,6 +73,20 @@ const canManageComments = computed(() => {
   return canManage
 })
 
+// Filter comments to display based on visibility
+// Admin/Responsavel can see all comments, others only see visible ones
+const visibleComments = computed(() => {
+  if (!props.publication.comments) return []
+  
+  // Admin and Responsavel can see all comments (including hidden ones)
+  if (canManageComments.value) {
+    return props.publication.comments
+  }
+  
+  // Other users only see visible comments
+  return props.publication.comments.filter(comment => comment.visible !== false)
+})
+
 // Filter tags to display (exclude hidden tags for ALL users)
 // Hidden tags should only be visible in the tags management page
 const visibleTags = computed(() => {
@@ -93,6 +107,7 @@ const commentLoading = ref(false)
 const manageTagsModalOpen = ref(false)
 const showHistoryModal = ref(false)
 const downloadingFile = ref(false)
+const togglingAllComments = ref(false)
 
 const toast = useToast()
 const config = useRuntimeConfig()
@@ -171,6 +186,15 @@ const submitComment = async () => {
 // ===== TOGGLE VISIBILITY DE COMENTÁRIO =====
 const togglingCommentVisibility = ref<Record<number, boolean>>({})
 
+// Computed para determinar se a maioria dos comentários está visível
+const commentsVisibilityState = computed(() => {
+  if (!props.publication.comments || props.publication.comments.length === 0) {
+    return null
+  }
+  const visibleCount = props.publication.comments.filter(c => c.visible).length
+  return visibleCount >= props.publication.comments.length / 2
+})
+
 const toggleCommentVisibility = async (commentId: number, currentVisibility: boolean) => {
   try {
     togglingCommentVisibility.value[commentId] = true
@@ -208,6 +232,69 @@ const toggleCommentVisibility = async (commentId: number, currentVisibility: boo
     })
   } finally {
     delete togglingCommentVisibility.value[commentId]
+  }
+}
+
+// ===== TOGGLE VISIBILITY DE TODOS OS COMENTÁRIOS =====
+const toggleAllCommentsVisibility = async () => {
+  if (!props.publication.comments || props.publication.comments.length === 0) {
+    toast.add({
+      title: 'Aviso',
+      description: 'Não há comentários nesta publicação',
+      color: 'warning'
+    })
+    return
+  }
+
+  // Determinar o novo estado baseado na maioria dos comentários
+  const visibleCount = props.publication.comments.filter(c => c.visible).length
+  const newVisibility = visibleCount < props.publication.comments.length / 2
+
+  try {
+    togglingAllComments.value = true
+    
+    const response = await $fetch(`${api}/posts/${props.publication.id}/comments/visibility`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: {
+        visible: newVisibility
+      }
+    }) as any
+
+    // Atualizar todos os comentários localmente
+    if (props.publication.comments) {
+      props.publication.comments.forEach(comment => {
+        comment.visible = newVisibility
+      })
+    }
+
+    toast.add({
+      title: 'Sucesso',
+      description: response.message || (newVisibility ? 'Comentários visíveis' : 'Comentários ocultados'),
+      color: 'success'
+    })
+  } catch (error: any) {
+    console.error('Erro ao alterar visibilidade dos comentários:', error)
+    
+    let errorMessage = 'Falha ao alterar visibilidade dos comentários'
+    if (error.status === 403) {
+      errorMessage = 'Não tem permissão para alterar a visibilidade dos comentários'
+    } else if (error.status === 404) {
+      errorMessage = 'Publicação não encontrada'
+    } else if (error.data?.message) {
+      errorMessage = error.data.message
+    }
+    
+    toast.add({
+      title: 'Erro',
+      description: errorMessage,
+      color: 'error'
+    })
+  } finally {
+    togglingAllComments.value = false
   }
 }
 
@@ -393,9 +480,9 @@ const hasFile = computed(() => {
           <span class="font-medium">{{ getAverageRating.toFixed(1) }}</span>
           <span class="text-gray-500">({{ getRatingsCount }})</span>
         </div>
-        <div v-if="publication.comments && publication.comments.length > 0" class="flex items-center gap-1">
+        <div v-if="visibleComments.length > 0" class="flex items-center gap-1">
           <UIcon name="i-lucide-message-circle" class="w-4 h-4 text-blue-500" />
-          <span class="font-medium">{{ publication.comments.length }}</span>
+          <span class="font-medium">{{ visibleComments.length }}</span>
         </div>
       </div>
 
@@ -425,24 +512,24 @@ const hasFile = computed(() => {
           label="Comentar"
           @click="showComments = true" />
 
-        <UButton v-if="!isAuthor && publication.comments && publication.comments.length > 0" 
+        <UButton v-if="visibleComments.length > 0" 
           color="secondary" variant="ghost" size="sm" 
           :icon="showComments ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-          :label="`Comentários (${publication.comments.length})`"
+          :label="`Comentários (${visibleComments.length})`"
           @click="showComments = !showComments" />
       </div>
 
       <!-- Pré-visualização de Comentários (mostrar sempre se existirem) -->
-      <div v-if="!isAuthor && publication.comments && publication.comments.length > 0 && !showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
+      <div v-if="visibleComments.length > 0 && !showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <UIcon name="i-lucide-message-circle" class="w-4 h-4" />
-          Comentários ({{ publication.comments.length }})
+          Comentários ({{ visibleComments.length }})
         </h4>
         
         <!-- Mostrar apenas os últimos 2 comentários -->
         <div class="space-y-2">
-          <div v-for="comment in publication.comments.slice(-2)" :key="comment.id" 
-            class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+          <div v-for="comment in visibleComments.slice(-2)" :key="comment.id" 
+            class="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
             <div class="flex items-start justify-between gap-2 mb-2">
               <div class="flex-1">
                 <div class="flex items-center gap-2">
@@ -477,21 +564,38 @@ const hasFile = computed(() => {
         />
       </div>
 
-      <!-- Comentários (apenas para não-autores) -->
-      <div v-if="!isAuthor && showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
+      <!-- Comentários -->
+      <div v-if="showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
         <!-- Lista de Comentários -->
-        <div v-if="publication.comments && publication.comments.length > 0" class="space-y-3">
-          <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <UIcon name="i-lucide-message-circle" class="w-4 h-4" />
-            Comentários ({{ publication.comments.length }})
-          </h4>
+        <div v-if="visibleComments.length > 0" class="space-y-3">
+          <!-- Header dos Comentários com Toggle All -->
+          <div class="flex items-center justify-between">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <UIcon name="i-lucide-message-circle" class="w-4 h-4" />
+              Comentários ({{ visibleComments.length }})
+            </h4>
+            
+            <!-- Toggle All Comments Button (Only for Admin/Responsavel) -->
+            <UButton 
+              v-if="canManageComments"
+              :icon="commentsVisibilityState ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+              size="xs"
+              color="primary"
+              variant="ghost"
+              :loading="togglingAllComments"
+              @click="toggleAllCommentsVisibility"
+            >
+              {{ commentsVisibilityState ? 'Ocultar Todos' : 'Mostrar Todos' }}
+            </UButton>
+          </div>
+          
           <div class="space-y-3 max-h-96 overflow-y-auto">
-            <div v-for="comment in publication.comments" :key="comment.id" 
-              class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
+            <div v-for="comment in visibleComments" :key="comment.id" 
+              class="bg-white dark:bg-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="flex-1">
                   <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                    <div class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center">
                       <span class="text-xs font-semibold text-white">
                         {{ (comment.author?.name?.[0] || 'A').toUpperCase() }}
                       </span>
