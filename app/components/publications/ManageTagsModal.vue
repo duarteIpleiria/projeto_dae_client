@@ -58,6 +58,12 @@ const tagOptions = computed(() => {
 
 const loading = computed(() => loadingTags.value || loadingOperation.value)
 
+// Check if user can remove tags (not Colaborador)
+const canRemoveTags = computed(() => {
+  const role = authStore.user?.role
+  return role === 'Administrador' || role === 'Responsavel'
+})
+
 const addTags = async () => {
   if (!props.publication || selectedTagIds.value.length === 0) return
 
@@ -155,6 +161,7 @@ const closeModal = () => {
             >
               <span>{{ tag.name }}</span>
               <UButton
+                v-if="canRemoveTags"
                 icon="i-lucide-x"
                 size="xs"
                 variant="ghost"
