@@ -20,16 +20,12 @@ const toast = useToast()
 const selectedUser = ref<UserData | null>(null)
 const selectedUserForEdit = ref<UserData | null>(null)
 const selectedUserForRoleChange = ref<UserData | null>(null)
+const selectedUserForToggle = ref<UserData | null>(null)
 const selectedUserForView = ref<UserData | null>(null)
 
 const { data, error, refresh, status } = useFetch(`${api}/users`, {
-  key: 'users-list',
   headers: {
     Authorization: `Bearer ${token}`,
-  },
-  watch: false,
-  onResponse({ response }) {
-    console.log('[Users Page] Fetched users:', response._data?.length || 0, 'users', response._data)
   },
   onResponseError({ response }) {
     console.error('[Users Page] API Error:', {
@@ -61,51 +57,19 @@ const { data, error, refresh, status } = useFetch(`${api}/users`, {
 
 const users = computed(() => (data.value as any) || []);
 
-const { toggleUserActive } = useUser();
-
 // Search filter for sidebar
 const searchQuery = ref('')
-const statusFilter = ref<'active' | 'inactive' | 'all'>('active')
-
 const filteredUsers = computed(() => {
-  let filtered = users.value
-  
-  // Filter by status
-  if (statusFilter.value === 'active') {
-    filtered = filtered.filter((user: UserData) => user.active !== false)
-  } else if (statusFilter.value === 'inactive') {
-    filtered = filtered.filter((user: UserData) => user.active === false)
+  if (!searchQuery.value.trim()) {
+    return users.value
   }
-  // 'all' shows everything
-  
-  // Filter by search query
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter((user: UserData) => 
-      user.name.toLowerCase().includes(query) || 
-      user.email.toLowerCase().includes(query) ||
-      user.role.toLowerCase().includes(query)
-    )
-  }
-  
-  return filtered
+  const query = searchQuery.value.toLowerCase()
+  return users.value.filter((user: UserData) => 
+    user.name.toLowerCase().includes(query) || 
+    user.email.toLowerCase().includes(query) ||
+    user.role.toLowerCase().includes(query)
+  )
 })
-
-// Debug filter changes
-watch(statusFilter, (newValue, oldValue) => {
-  console.log(`[Users] Status filter changed from '${oldValue}' to '${newValue}'`)
-  console.log(`[Users] Filtered users count: ${filteredUsers.value.length}`)
-})
-
-// Debug data changes
-watch(() => users.value, (newUsers) => {
-  console.log(`[Users] Users data updated, total count: ${newUsers?.length || 0}`)
-  if (newUsers && newUsers.length > 0) {
-    const activeCount = newUsers.filter((u: UserData) => u.active !== false).length
-    const inactiveCount = newUsers.filter((u: UserData) => u.active === false).length
-    console.log(`[Users] Active: ${activeCount}, Inactive: ${inactiveCount}`)
-  }
-}, { immediate: true })
 
 function getUserActions(user: UserData) {
   const isOwnAccount = user.id === authStore.user.id
@@ -146,121 +110,26 @@ function getUserActions(user: UserData) {
           selectedUserForRoleChange.value = user
         }
       },
-      ...(user.id !== authStore.user.id ? [{
+      {
         label: isActive ? 'Desativar utilizador' : 'Ativar utilizador',
         icon: isActive ? 'i-lucide-user-x' : 'i-lucide-user-check',
-        async onSelect() {
-          await handleToggleActive(user)
-        }
-      }] : []),
-      {
-        type: 'separator'
-      },
-      {
-        label: 'Delete user',
-        icon: 'i-lucide-trash',
-        color: 'error',
         onSelect() {
-          selectedUser.value = user
+          selectedUserForToggle.value = user
         }
       }
-    ] : [])
-  ]
-}
-
-async function handleToggleActive(user: UserData) {
-  const targetState = user.active === false
-  const actionTextPT = targetState ? 'ativar' : 'desativar'
-  
-  console.log('[Users] handleToggleActive called:', {
-    userId: user.id,
-    userName: user.name,
-    currentState: user.active,
-    targetState: targetState,
-    currentUserId: authStore.user?.id,
-    currentUserName: authStore.user?.name
-  })
-  
-  // Prevent deactivating yourself
-  if (user.id === authStore.user?.id && !targetState) {
-    console.error('[Users] Cannot deactivate yourself!')
-    toast.add({
-      title: 'Ação não permitida',
-      description: 'Não pode desativar a sua própria conta',
+    ] : []),
+    {
+      type: 'separator'
+    },
+    {
+      label: 'Delete user',
+      icon: 'i-lucide-trash',
       color: 'error',
-      icon: 'i-lucide-shield-alert',
-      timeout: 5000
-    })
-    return
-  }
-  
-  try {
-    console.log(`[Users] Calling toggleUserActive for user ${user.id}...`)
-    await toggleUserActive(user.id, targetState)
-    console.log(`[Users] toggleUserActive completed successfully`)
-
-    toast.add({
-      title: targetState ? 'Utilizador ativado' : 'Utilizador desativado',
-      description: `O utilizador "${user.name}" foi ${targetState ? 'ativado' : 'desativado'} com sucesso`,
-      color: 'success',
-      icon: targetState ? 'i-lucide-user-check' : 'i-lucide-user-x',
-      timeout: 3000
-    })
-
-    console.log('[Users] Refreshing user list...')
-    
-    // Clear the cache and force refresh from server
-    await refreshNuxtData('users-list')
-    console.log('[Users] User list refreshed from server, total users:', users.value?.length || 0)
-    
-    // Verify the user's status was updated
-    const updatedUser = users.value.find((u: UserData) => u.id === user.id)
-    if (updatedUser) {
-      console.log(`[Users] User ${user.id} status after refresh: active=${updatedUser.active}`)
-    } else {
-      console.warn(`[Users] User ${user.id} not found in refreshed list`)
+      onSelect() {
+        selectedUser.value = user
+      }
     }
-    
-    // Also update the selected user view if it's the same user
-    if (selectedUserForView.value?.id === user.id) {
-      selectedUserForView.value.active = targetState
-      console.log(`[Users] Updated selectedUserForView active status to ${targetState}`)
-    }
-  } catch (error: any) {
-    console.error('[Users] Error toggling user:', {
-      error,
-      status: error.status,
-      message: error.data?.message,
-      userId: user.id,
-      targetState
-    })
-    
-    if (error.status === 403 || error.status === 401) {
-      toast.add({
-        title: 'Sem permissão',
-        description: 'Não tem permissão para alterar o estado do utilizador',
-        color: 'error',
-        icon: 'i-lucide-shield-alert',
-        timeout: 5000
-      })
-    } else if (error.status === 400) {
-      toast.add({
-        title: 'Não é possível modificar a conta',
-        description: error.data?.message || 'Não pode desativar a sua própria conta',
-        color: 'error',
-        icon: 'i-lucide-alert-circle',
-        timeout: 5000
-      })
-    } else {
-      toast.add({
-        title: `Erro ao ${actionTextPT} utilizador`,
-        description: error.data?.message || `Não foi possível ${actionTextPT} o utilizador`,
-        color: 'error',
-        icon: 'i-lucide-alert-circle',
-        timeout: 5000
-      })
-    }
-  }
+  ]
 }
 </script>
 
@@ -288,24 +157,13 @@ async function handleToggleActive(user: UserData) {
 
     <!-- Sidebar User List -->
     <div class="flex flex-col h-full">
-      <!-- Search and Filter -->
-      <div class="p-3 border-b border-default flex gap-2">
+      <!-- Search -->
+      <div class="p-3 border-b border-default">
         <UInput 
           v-model="searchQuery" 
           icon="i-lucide-search" 
           placeholder="Search users..." 
           size="sm"
-          class="flex-1"
-        />
-        <USelect 
-          v-model="statusFilter" 
-          :items="[
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-            { value: 'all', label: 'All' }
-          ]"
-          size="sm"
-          class="min-w-[140px]"
         />
       </div>
 
@@ -345,7 +203,7 @@ async function handleToggleActive(user: UserData) {
               />
               <div 
                 v-else
-                class="absolute bottom-0 right-0 size-3 rounded-full bg-error border-2 border-background"
+                class="absolute bottom-0 right-0 size-3 rounded-full bg-neutral-400 border-2 border-background"
                 title="Inactive"
               />
             </div>
@@ -439,21 +297,21 @@ async function handleToggleActive(user: UserData) {
               <p class="text-sm">{{ selectedUserForView.id }}</p>
             </div>
 
-            <hr class="border-t border-default" />
+            <UDivider />
 
             <div>
               <label class="text-sm font-medium text-muted">Name</label>
               <p class="text-sm">{{ selectedUserForView.name }}</p>
             </div>
 
-            <hr class="border-t border-default" />
+            <UDivider />
 
             <div>
               <label class="text-sm font-medium text-muted">Email</label>
               <p class="text-sm">{{ selectedUserForView.email }}</p>
             </div>
 
-            <hr class="border-t border-default" />
+            <UDivider />
 
             <div>
               <label class="text-sm font-medium text-muted">Role</label>
@@ -466,7 +324,7 @@ async function handleToggleActive(user: UserData) {
               </div>
             </div>
 
-            <hr class="border-t border-default" />
+            <UDivider />
 
             <div>
               <label class="text-sm font-medium text-muted">Status</label>
@@ -506,12 +364,11 @@ async function handleToggleActive(user: UserData) {
               @click="selectedUserForRoleChange = selectedUserForView"
             />
             <UButton
-              v-if="selectedUserForView.id !== authStore.user.id"
               :label="selectedUserForView.active !== false ? 'Deactivate' : 'Activate'"
               :icon="selectedUserForView.active !== false ? 'i-lucide-user-x' : 'i-lucide-user-check'"
               :color="selectedUserForView.active !== false ? 'warning' : 'success'"
               variant="outline"
-              @click="handleToggleActive(selectedUserForView)"
+              @click="selectedUserForToggle = selectedUserForView"
             />
             <UButton
               label="Delete User"
@@ -564,6 +421,17 @@ async function handleToggleActive(user: UserData) {
     }"
     @close="() => {
       selectedUserForRoleChange = null
+    }"
+  />
+
+  <UsersToggleActiveModal
+    :user="selectedUserForToggle"
+    @toggled="() => {
+      refresh()
+      selectedUserForToggle = null
+    }"
+    @close="() => {
+      selectedUserForToggle = null
     }"
   />
 </template>

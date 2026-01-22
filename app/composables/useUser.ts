@@ -99,7 +99,7 @@ export const useUser = () => {
     }
   }
 
-  // ===== TOGGLE USER ACTIVE STATUS (EP25/EP26) =====
+  // ===== TOGGLE USER ACTIVE STATUS (EP25) =====
   const toggleUserActive = async (userId: number, active: boolean) => {
     loading.value = true
     error.value = null
@@ -115,27 +115,15 @@ export const useUser = () => {
         throw new Error('Authentication required')
       }
 
-      // Use proper soft delete endpoints
-      const endpoint = active ? 'activate' : 'deactivate'
-      const fullUrl = `${api}/users/${userId}/${endpoint}`
-      
-      console.log('[useUser] toggleUserActive:', {
-        userId,
-        active,
-        endpoint,
-        fullUrl,
-        hasToken: !!token
-      })
-      
-      const response = await $fetch(fullUrl, {
+      const response = await $fetch(`${api}/users/${userId}/active`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: { active: active }
       })
 
-      console.log('[useUser] toggleUserActive success:', response)
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to update user status'
