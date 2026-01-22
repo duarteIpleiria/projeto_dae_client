@@ -133,6 +133,28 @@ const loadPublications = async () => {
     // Processar dados
     let data = Array.isArray(response) ? response : (response?.data || [])
     
+    // Normalizar publicações PRIMEIRO
+    data = data.map((p: any) => {
+      const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
+      
+      return {
+        ...p,
+        average_rating: p?.average_rating ?? p?.averageRating ?? 0,
+        ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
+        comments_count: commentsCount,
+        is_visible: p?.is_visible ?? p?.visible ?? false,
+        comments: p?.comments || []
+      }
+    })
+    
+    // Log antes dos filtros
+    if (sortBy.value) {
+      console.log(`📊 Ordem do backend (${sortBy.value}):`, data.slice(0, 5).map((p: any) => ({
+        id: p.id,
+        [sortBy.value]: p[sortBy.value]
+      })))
+    }
+    
     // Aplicar filtro de visibilidade no frontend
     if (selectedFilter.value !== 'all') {
       data = data.filter((p: any) => {
@@ -149,24 +171,7 @@ const loadPublications = async () => {
       })
     }
     
-    // Normalizar publicações
-    publications.value = data.map((p: any) => {
-      const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
-      console.log(`Publicação ${p.id}: comments_count=${commentsCount}, raw:`, { 
-        comments_count: p?.comments_count, 
-        commentsCount: p?.commentsCount,
-        comments: p?.comments?.length 
-      })
-      
-      return {
-        ...p,
-        average_rating: p?.average_rating ?? p?.averageRating ?? 0,
-        ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
-        comments_count: commentsCount,
-        is_visible: p?.is_visible ?? p?.visible ?? false,
-        comments: p?.comments || []
-      }
-    })
+    publications.value = data
 
     // Atualizar total
     totalItems.value = publications.value.length

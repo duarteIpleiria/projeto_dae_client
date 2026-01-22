@@ -122,18 +122,24 @@ const submitComment = async () => {
 
   try {
     commentLoading.value = true
-    const response = await $fetch(`${api}/posts/${props.publication.id}/comments`, {
+    
+    const endpoint = `${api}/posts/${props.publication.id}/comments`
+    const payload = { comment: newComment.value }
+    
+    console.log('[COMMENT POST] Endpoint:', endpoint)
+    console.log('[COMMENT POST] Payload:', payload)
+    console.log('[COMMENT POST] Token:', token ? 'presente' : 'ausente')
+    
+    const response = await $fetch(endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: {
-        comment: newComment.value
-      }
+      body: payload
     }) as any
 
-    console.log('Comentário criado:', response)
+    console.log('[COMMENT POST] Resposta do backend:', response)
     newComment.value = ''
     toast.add({
       title: 'Sucesso',
@@ -141,9 +147,15 @@ const submitComment = async () => {
       color: 'success'
     })
     
-    // Recarregar comentários
-    if (props.publication.comments) {
-      props.publication.comments.push(response)
+    // Adicionar comentário ao array local
+    if (!props.publication.comments) {
+      props.publication.comments = []
+    }
+    props.publication.comments.push(response)
+    
+    // Atualizar contador
+    if (props.publication.comments_count !== undefined) {
+      props.publication.comments_count++
     }
   } catch (error) {
     console.error('Erro ao adicionar comentário:', error)
