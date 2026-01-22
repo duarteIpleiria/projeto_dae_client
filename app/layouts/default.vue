@@ -5,38 +5,60 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute()
 const toast = useToast()
+const authStore = useAuthStore()
 
 const open = ref(false)
 
-const links = [[{
-  label: 'Home',
-  icon: 'i-lucide-house',
-  to: '/',
-  onSelect: () => {
-    open.value = false
+// Check if user can access hidden content
+const canAccessHiddenContent = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
+const links = computed(() => {
+  const baseLinks: NavigationMenuItem[] = [{
+    label: 'Home',
+    icon: 'i-lucide-house',
+    to: '/',
+    onSelect: () => {
+      open.value = false
+    }
+  },{
+    label: 'Publications',
+    icon: 'i-lucide-book-open-check',
+    to: '/publications',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Tags',
+    icon: 'i-lucide-tags',
+    to: '/tags',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Users',
+    icon: 'i-lucide-user',
+    to: '/users',
+    onSelect: () => {
+      open.value = false
+    }
+  }]
+
+  // Add Hidden Content link for admins and responsaveis
+  if (canAccessHiddenContent.value) {
+    baseLinks.push({
+      label: 'Hidden Content',
+      icon: 'i-lucide-eye-off',
+      to: '/hidden-content',
+      onSelect: () => {
+        open.value = false
+      }
+    })
   }
-},{
-  label: 'Publications',
-  icon: 'i-lucide-book-open-check',
-  to: '/publications',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Tags',
-  icon: 'i-lucide-tags',
-  to: '/tags',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Users',
-  icon: 'i-lucide-user',
-  to: '/users',
-  onSelect: () => {
-    open.value = false
-  }
-}], []] satisfies NavigationMenuItem[][]
+
+  return [[...baseLinks], []] satisfies NavigationMenuItem[][]
+})
 
 onMounted(async () => {
   const cookie = useCookie('cookie-consent')
