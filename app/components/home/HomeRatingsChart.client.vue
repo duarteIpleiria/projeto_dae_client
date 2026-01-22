@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VisXYContainer, VisStackedBar, VisAxis, VisTooltip } from '@unovis/vue'
+import { VisXYContainer, VisLine, VisArea, VisAxis, VisTooltip, VisCrosshair } from '@unovis/vue'
 import type { Period, Range } from '~/types'
 
 const cardRef = useTemplateRef<HTMLElement | null>('cardRef')
@@ -10,7 +10,7 @@ const props = defineProps<{
 }>()
 
 type DataRecord = {
-  area: string
+  rating: number
   count: number
 }
 
@@ -22,8 +22,9 @@ const token = useCookie('auth_token')
 
 const data = ref<DataRecord[]>([])
 const total = ref(0)
+const avgRating = ref(0)
 
-const loadPublicationsByArea = async () => {
+const loadRatingsDistribution = async () => {
   if (!token.value) return
   
   try {
@@ -38,37 +39,46 @@ const loadPublicationsByArea = async () => {
 
     const publications = Array.isArray(response) ? response : []
     
-    // Agrupar por área científica
-    const areaCount: Record<string, number> = {}
+    // Agrupar por rating (0-5 com intervalos de 0.5)
+    const ratingCount: Record<number, number> = {
+      0: 0, 0.5: 0, 1: 0, 1.5: 0, 2: 0, 2.5: 0, 3: 0, 3.5: 0, 4: 0, 4.5: 0, 5: 0
+    }
+
+    let totalRatings = 0
+    let sumRatings = 0
+
     publications.forEach((pub: any) => {
-      const area = pub.scientific_area || pub.scientificArea || 'Sem Área'
-      areaCount[area] = (areaCount[area] || 0) + 1
+      const rating = pub.average_rating || pub.averageRating || 0
+      if (rating > 0) {
+        const rounded = Math.round(rating * 2) / 2 // Arredondar para 0.5
+        ratingCount[rounded] = (ratingCount[rounded] || 0) + 1
+        totalRatings++
+        sumRatings += rating
+      }
     })
 
-    data.value = Object.entries(areaCount)
-      .map(([area, count]) => ({ area, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10) // Top 10 áreas
+    data.value = Object.entries(ratingCount)
+      .map(([rating, count]) => ({ rating: parseFloat(rating), count }))
+      .sort((a, b) => a.rating - b.rating)
 
-    total.value = publications.length
+    total.value = totalRatings
+    avgRating.value = totalRatings > 0 ? sumRatings / totalRatings : 0
   } catch (error) {
-    console.error('Erro ao carregar publicações por área:', error)
+    console.error('Erro ao carregar distribuição de avaliações:', error)
   }
 }
 
-watch([() => props.period, () => props.range], loadPublicationsByArea, { immediate: true })
+watch([() => props.period, () => props.range], loadRatingsDistribution, { immediate: true })
 
 const x = (_: DataRecord, i: number) => i
 const y = (d: DataRecord) => d.count
 
 const xTicks = (i: number) => {
   if (!data.value[i]) return ''
-  return data.value[i].area.length > 15 
-    ? data.value[i].area.substring(0, 15) + '...' 
-    : data.value[i].area
+  return data.value[i].rating.toString()
 }
 
-const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
+const template = (d: DataRecord) => `${d.rating} ⭐: ${d.count} publicações`
 </script>
 
 <template>
@@ -76,33 +86,37 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          Publicações por Área Científica
+          Distribuição de Avaliações
         </p>
         <p class="text-3xl text-highlighted font-semibold">
-          {{ total }} publicações
+          {{ avgRating.toFixed(1) }} ⭐ média
         </p>
       </div>
     </template>
 
     <VisXYContainer
-      v-if="data.length > 0"
+      v-if="data.length > 0 && total > 0"
       :data="data"
-      :padding="{ top: 40, bottom: 60 }"
+      :padding="{ top: 40 }"
       class="h-96"
       :width="width"
     >
-      <VisStackedBar
+      <VisLine
         :x="x"
         :y="y"
-        color="var(--ui-primary)"
-        :rounded-corners="4"
+        color="var(--ui-success)"
+      />
+      <VisArea
+        :x="x"
+        :y="y"
+        color="var(--ui-success)"
+        :opacity="0.2"
       />
 
       <VisAxis
         type="x"
         :x="x"
         :tick-format="xTicks"
-        :tick-text-angle="-45"
       />
 
       <VisAxis
@@ -110,18 +124,23 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publicações`
         :y="y"
       />
 
+      <VisCrosshair
+        color="var(--ui-success)"
+        :template="template"
+      />
+
       <VisTooltip :container-ref="cardRef" />
     </VisXYContainer>
 
     <div v-else class="h-96 flex items-center justify-center text-muted">
-      <p>Sem dados para apresentar</p>
+      <p>Sem avaliações para apresentar</p>
     </div>
   </UCard>
 </template>
 
 <style scoped>
 .unovis-xy-container {
-  --vis-crosshair-line-stroke-color: var(--ui-primary);
+  --vis-crosshair-line-stroke-color: var(--ui-success);
   --vis-crosshair-circle-stroke-color: var(--ui-bg);
 
   --vis-axis-grid-color: var(--ui-border);

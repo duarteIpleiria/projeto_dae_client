@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Period, Range, Sale } from '~/types'
+import type { Period, Range } from '~/types'
 
 const props = defineProps<{
   period: Period
@@ -10,87 +10,96 @@ const props = defineProps<{
 
 const UBadge = resolveComponent('UBadge')
 
-const sampleEmails = [
-  'james.anderson@example.com',
-  'mia.white@example.com',
-  'william.brown@example.com',
-  'emma.davis@example.com',
-  'ethan.harris@example.com'
-]
+const config = useRuntimeConfig()
+const api = config.public.apiBase
+const token = useCookie('auth_token')
 
-const { data } = await useAsyncData('sales', async () => {
-  const sales: Sale[] = []
-  const currentDate = new Date()
+interface PublicationStat {
+  id: number
+  title: string
+  author: string
+  ratings_count: number
+  average_rating: number
+  comments_count: number
+}
 
-  for (let i = 0; i < 5; i++) {
-    const hoursAgo = randomInt(0, 48)
-    const date = new Date(currentDate.getTime() - hoursAgo * 3600000)
+const { data } = await useAsyncData<PublicationStat[]>('publication-stats', async () => {
+  if (!token.value) return []
 
-    sales.push({
-      id: (4600 - i).toString(),
-      date: date.toISOString(),
-      status: randomFrom(['paid', 'failed', 'refunded']),
-      email: randomFrom(sampleEmails),
-      amount: randomInt(100, 1000)
+  try {
+    const response = await $fetch(`${api}/posts/search`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token.value}`,
+        'Content-Type': 'application/json'
+      },
+      body: {}
     })
-  }
 
-  return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const publications = Array.isArray(response) ? response : []
+    
+    // Mapear para estatísticas e ordenar por número de avaliações
+    const stats = publications
+      .map((pub: any) => ({
+        id: pub.id,
+        title: pub.title,
+        author: pub.author?.name || pub.authorName || 'Desconhecido',
+        ratings_count: pub.ratings_count || pub.ratingsCount || 0,
+        average_rating: pub.average_rating || pub.averageRating || 0,
+        comments_count: pub.comments?.length || 0
+      }))
+      .sort((a, b) => b.ratings_count - a.ratings_count)
+      .slice(0, 10) // Top 10 publicações
+
+    return stats
+  } catch (error) {
+    console.error('Erro ao carregar estatísticas de publicações:', error)
+    return []
+  }
 }, {
   watch: [() => props.period, () => props.range],
   default: () => []
 })
 
-const columns: TableColumn<Sale>[] = [
+const columns: TableColumn<PublicationStat>[] = [
   {
-    accessorKey: 'id',
-    header: 'ID',
-    cell: ({ row }) => `#${row.getValue('id')}`
-  },
-  {
-    accessorKey: 'date',
-    header: 'Date',
+    accessorKey: 'title',
+    header: 'Publicação',
     cell: ({ row }) => {
-      return new Date(row.getValue('date')).toLocaleString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
+      const title = row.getValue('title') as string
+      return title.length > 50 ? title.substring(0, 50) + '...' : title
     }
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
+    accessorKey: 'author',
+    header: 'Autor'
+  },
+  {
+    accessorKey: 'ratings_count',
+    header: () => h('div', { class: 'text-center' }, 'Avaliações'),
     cell: ({ row }) => {
-      const color = {
-        paid: 'success' as const,
-        failed: 'error' as const,
-        refunded: 'neutral' as const
-      }[row.getValue('status') as string]
-
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
-        row.getValue('status')
-      )
+      return h('div', { class: 'text-center font-medium' }, row.getValue('ratings_count'))
     }
   },
   {
-    accessorKey: 'email',
-    header: 'Email'
+    accessorKey: 'average_rating',
+    header: () => h('div', { class: 'text-center' }, 'Média'),
+    cell: ({ row }) => {
+      const rating = Number.parseFloat(row.getValue('average_rating'))
+      const color = rating >= 4 ? 'success' : rating >= 3 ? 'warning' : 'error'
+      
+      return h(UBadge, { 
+        class: 'justify-center', 
+        variant: 'subtle', 
+        color 
+      }, () => `${rating.toFixed(1)} ⭐`)
+    }
   },
   {
-    accessorKey: 'amount',
-    header: () => h('div', { class: 'text-right' }, 'Amount'),
+    accessorKey: 'comments_count',
+    header: () => h('div', { class: 'text-center' }, 'Comentários'),
     cell: ({ row }) => {
-      const amount = Number.parseFloat(row.getValue('amount'))
-
-      const formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(amount)
-
-      return h('div', { class: 'text-right font-medium' }, formatted)
+      return h('div', { class: 'text-center' }, row.getValue('comments_count'))
     }
   }
 ]

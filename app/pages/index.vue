@@ -49,21 +49,15 @@ const period = ref<Period>('daily')
           </UDropdownMenu>
         </template>
       </UDashboardNavbar>
-
-      <UDashboardToolbar>
-        <template #left>
-          <!-- NOTE: The `-ms-1` class is used to align with the `DashboardSidebarCollapse` button here. -->
-          <HomeDateRangePicker v-model="range" class="-ms-1" />
-
-          <HomePeriodSelect v-model="period" :range="range" />
-        </template>
-      </UDashboardToolbar>
     </template>
 
     <template #body>
       <HomeStats :period="period" :range="range" />
-      <HomeChart :period="period" :range="range" />
-      <HomeSales :period="period" :range="range" />
+      
+      <div class="grid lg:grid-cols-2 gap-4 sm:gap-6">
+        <HomeChart :period="period" :range="range" />
+        <HomeRatingsChart :period="period" :range="range" />
+      </div>
     </template>
   </UDashboardPanel>
 </template>
