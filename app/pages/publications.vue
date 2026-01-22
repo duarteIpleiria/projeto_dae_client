@@ -56,9 +56,9 @@ const loadTags = async () => {
 
     console.log('Carregando tags de:', `${api}/tags`)
     const response = await $fetch(`${api}/tags`, {
-      headers: {
+      headers: token ? {
         Authorization: `Bearer ${token}`
-      }
+      } : {}
     }) as any
 
     console.log('✅ Tags carregadas:', response)
@@ -104,8 +104,12 @@ const loadPublications = async () => {
     if (sortBy.value) {
       response = await $fetch(`${api}/posts/sort`, {
         method: 'POST',
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        } : {
           'Content-Type': 'application/json; charset=UTF-8',
           'Accept': 'application/json; charset=UTF-8',
           'Accept-Charset': 'UTF-8'
@@ -118,8 +122,11 @@ const loadPublications = async () => {
     } else {
       // Buscar sem ordenação (ordem padrão da API)
       response = await $fetch(`${api}/posts`, {
-        headers: {
+        headers: token ? {
           Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        } : {
           'Accept': 'application/json; charset=UTF-8',
           'Accept-Charset': 'UTF-8'
         }
@@ -312,7 +319,7 @@ onMounted(async () => {
         </template>
 
         <template #right>
-          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
+          <UButton v-if="user" icon="i-lucide-plus" size="md" @click="showAddModal = true">
             Nova Publicação
           </UButton>
         </template>

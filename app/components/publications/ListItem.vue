@@ -73,6 +73,13 @@ const canManageComments = computed(() => {
   return canManage
 })
 
+// Check if user can view history (only authenticated users with specific roles)
+const canViewHistory = computed(() => {
+  if (!authStore.user) return false
+  const role = authStore.user?.role
+  return role === 'Colaborador' || role === 'Responsavel' || role === 'Administrador'
+})
+
 // Filter comments to display based on visibility
 // Admin/Responsavel can see all comments, others only see visible ones
 const visibleComments = computed(() => {
@@ -751,27 +758,27 @@ const hasFile = computed(() => {
       </div>
 
       <!-- Ações -->
-      <div class="flex items-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex items-center gap-2 pt-4">
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
 
-        <UButton v-if="props.showHistory"
+        <UButton v-if="props.showHistory && canViewHistory"
           color="secondary" variant="ghost" size="sm"
           :icon="showHistoryDropdown ? 'i-lucide-chevron-up' : 'i-lucide-history'" 
           :label="showHistoryDropdown ? 'Ocultar Histórico' : 'Histórico'"
           @click="toggleHistory" />
 
-        <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
+        <UButton v-if="authStore.user" color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
           @click="manageTagsModalOpen = true" />
 
         <UButton v-if="hasFile" color="secondary" variant="ghost" size="sm" icon="i-lucide-download" label="Download"
           :loading="downloadingFile"
           @click="downloadFile" />
 
-        <UButton v-if="!isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
+        <UButton v-if="!isAuthor && authStore.user" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
           @click="$emit('rate', publication)" />
 
-        <UButton v-if="!isAuthor" 
+        <UButton v-if="!isAuthor && authStore.user" 
           color="secondary" variant="ghost" size="sm" 
           icon="i-lucide-message-circle"
           label="Comentar"
@@ -893,8 +900,8 @@ const hasFile = computed(() => {
           </div>
         </div>
 
-        <!-- Formulário para Adicionar Comentário -->
-        <div class="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+        <!-- Formulário para Adicionar Comentário (apenas para usuários autenticados) -->
+        <div v-if="authStore.user" class="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
           <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <UIcon name="i-lucide-edit" class="w-4 h-4" />
             Deixe seu Comentário

@@ -341,7 +341,7 @@ onMounted(() => {
 })
 
 // State
-const selectedType = ref('publications')
+const selectedType = ref('all')
 const searchQuery = ref('')
 const sortBy = ref('updatedAt')
 const sortOrder = ref('desc')

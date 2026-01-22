@@ -1,5 +1,8 @@
 export default defineNuxtRouteMiddleware((to) => {
-  if (to.path === '/login') return
+  // Rotas públicas que não precisam de autenticação
+  const publicRoutes = ['/login', '/publications', '/']
+  
+  if (publicRoutes.includes(to.path)) return
 
   const authCookie = useCookie('auth_token')
 

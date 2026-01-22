@@ -21,11 +21,14 @@ import { storeToRefs } from 'pinia'
 const { user } = storeToRefs(authStore)
 
 console.log('user in UserMenu.vue: ', user.value)
+
+const isAuthenticated = computed(() => !!user.value)
+
 const userLocal = computed(() => ({
-  name: user.value?.name ?? 'Guest User',
+  name: user.value?.name ?? 'Visitante',
   avatar: {
     src: 'https://github.com/benjamincanac.png',
-    alt: user.value?.name ?? 'Guest User'
+    alt: user.value?.name ?? 'Visitante'
   }
 }))
 
@@ -34,38 +37,62 @@ const userLocal = computed(() => ({
 
 function handleLogout() {
   authStore.logout()
+  // O logout já redireciona para /publications
+}
+
+function handleLogin() {
   router.push('/login')
 }
 
 
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  label: userLocal.value.name,
-  avatar: userLocal.value.avatar
-}], [
-  {
-    label: 'My Publications',
-    icon: 'i-lucide-book-open',
-    to: '/my-publications'
-  },
-  {
-    label: 'Activity History',
-    icon: 'i-lucide-activity',
-    to: '/activity'
-  },
-  {
-    label: 'Profile',
-    icon: 'i-lucide-user',
-    to: '/profile'
-  }, {
-    label: 'Log out',
-    icon: 'i-lucide-log-out',
-    onSelect(e) {
-      e.preventDefault()
-      handleLogout()
-    }
-  }]]))
+const items = computed<DropdownMenuItem[][]>(() => {
+  if (!isAuthenticated.value) {
+    return [[{
+      type: 'label',
+      label: 'Visitante',
+      avatar: {
+        src: 'https://github.com/benjamincanac.png',
+        alt: 'Visitante'
+      }
+    }], [{
+      label: 'Fazer Login',
+      icon: 'i-lucide-log-in',
+      onSelect(e) {
+        e.preventDefault()
+        handleLogin()
+      }
+    }]]
+  }
+
+  return [[{
+    type: 'label',
+    label: userLocal.value.name,
+    avatar: userLocal.value.avatar
+  }], [
+    {
+      label: 'My Publications',
+      icon: 'i-lucide-book-open',
+      to: '/my-publications'
+    },
+    {
+      label: 'Activity History',
+      icon: 'i-lucide-activity',
+      to: '/activity'
+    },
+    {
+      label: 'Profile',
+      icon: 'i-lucide-user',
+      to: '/profile'
+    }, {
+      label: 'Log out',
+      icon: 'i-lucide-log-out',
+      onSelect(e) {
+        e.preventDefault()
+        handleLogout()
+      }
+    }]]
+})
 </script>
 
 <template>
