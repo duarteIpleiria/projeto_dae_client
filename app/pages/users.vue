@@ -20,6 +20,7 @@ const selectedUser = ref<UserData | null>(null)
 const selectedUserForEdit = ref<UserData | null>(null)
 const selectedUserForRoleChange = ref<UserData | null>(null)
 const selectedUserForToggle = ref<UserData | null>(null)
+const selectedUserForHistory = ref<UserData | null>(null)
 const selectedUserViewId = ref<number | null>(null) // Store ID instead of object
 
 // Computed property that always gets fresh user data from the users array
@@ -134,6 +135,12 @@ function getUserActions(user: UserData) {
     icon: 'i-lucide-user-cog',
     onSelect() {
       selectedUserForRoleChange.value = user
+    }
+  }, {
+    label: 'See History',
+    icon: 'i-lucide-history',
+    onSelect() {
+      selectedUserForHistory.value = user
     }
   }, {
     label: isActive ? 'Desativar utilizador' : 'Ativar utilizador',
@@ -414,6 +421,13 @@ function getUserActions(user: UserData) {
               @click="selectedUserForRoleChange = selectedUserForView"
             />
             <UButton
+              label="See History"
+              icon="i-lucide-history"
+              color="neutral"
+              variant="outline"
+              @click="selectedUserForHistory = selectedUserForView"
+            />
+            <UButton
               :label="selectedUserForView.active !== false ? 'Deactivate' : 'Activate'"
               :icon="selectedUserForView.active !== false ? 'i-lucide-user-x' : 'i-lucide-user-check'"
               :color="selectedUserForView.active !== false ? 'warning' : 'success'"
@@ -474,6 +488,13 @@ function getUserActions(user: UserData) {
     @close="() => {
       selectedUserForRoleChange = null
     }"
+  />
+
+  <UsersActivityHistoryModal
+    :model-value="!!selectedUserForHistory"
+    :user-id="selectedUserForHistory?.id || null"
+    :user-name="selectedUserForHistory?.name || null"
+    @update:model-value="(val) => { if (!val) selectedUserForHistory = null }"
   />
 
   <UsersToggleActiveModal
