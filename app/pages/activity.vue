@@ -29,13 +29,45 @@ const getActivityIcon = (type: string) => {
     case 'edit':
       return 'i-lucide-edit'
     case 'tag':
+    case 'tag_creation':
+    case 'SUBSCRIBE_TAG':
+    case 'UNSUBSCRIBE_TAG':
+    case 'CREATE_TAG':
       return 'i-lucide-tag'
     case 'delete':
+    case 'DELETE_TAG':
       return 'i-lucide-trash'
+    case 'HIDE_TAG':
+      return 'i-lucide-eye-off'
+    case 'SHOW_TAG':
+      return 'i-lucide-eye'
     case 'comment':
       return 'i-lucide-message-circle'
     case 'rating':
       return 'i-lucide-star'
+    case 'ASSOCIATE_TAG':
+      return 'i-lucide-link'
+    case 'DISSOCIATE_TAG':
+      return 'i-lucide-unlink'
+    case 'UPDATE_NAME':
+    case 'EDIT_USER':
+      return 'i-lucide-user-pen'
+    case 'UPDATE_EMAIL':
+      return 'i-lucide-mail'
+    case 'UPDATE_PASSWORD':
+      return 'i-lucide-key'
+    case 'PASSWORD_RESET_REQUEST':
+      return 'i-lucide-key-round'
+    case 'CREATE_USER':
+      return 'i-lucide-user-plus'
+    case 'DELETE_USER':
+      return 'i-lucide-user-minus'
+    case 'ACTIVATE_USER':
+      return 'i-lucide-user-check'
+    case 'DEACTIVATE_USER':
+      return 'i-lucide-user-x'
+    case 'CHANGE_USER_ROLE':
+      return 'i-lucide-user-cog'
     default:
       return 'i-lucide-activity'
   }
@@ -44,17 +76,38 @@ const getActivityIcon = (type: string) => {
 const getActivityColor = (type: string) => {
   switch (type) {
     case 'upload':
+    case 'CREATE_TAG':
+    case 'CREATE_USER':
+    case 'ACTIVATE_USER':
       return 'green'
     case 'edit':
+    case 'ASSOCIATE_TAG':
+    case 'SUBSCRIBE_TAG':
+    case 'EDIT_USER':
+    case 'CHANGE_USER_ROLE':
       return 'blue'
     case 'tag':
+    case 'tag_creation':
       return 'purple'
     case 'delete':
+    case 'DELETE_TAG':
+    case 'DISSOCIATE_TAG':
+    case 'UNSUBSCRIBE_TAG':
+    case 'DELETE_USER':
+    case 'DEACTIVATE_USER':
+    case 'HIDE_TAG':
       return 'red'
+    case 'SHOW_TAG':
+      return 'green'
     case 'comment':
       return 'cyan'
     case 'rating':
       return 'yellow'
+    case 'UPDATE_NAME':
+    case 'UPDATE_EMAIL':
+    case 'UPDATE_PASSWORD':
+    case 'PASSWORD_RESET_REQUEST':
+      return 'gray'
     default:
       return 'gray'
   }
@@ -67,6 +120,7 @@ const getActivityLabel = (type: string) => {
     case 'edit':
       return 'Edição'
     case 'tag':
+    case 'tag_creation':
       return 'Tag'
     case 'delete':
       return 'Eliminação'
@@ -74,6 +128,42 @@ const getActivityLabel = (type: string) => {
       return 'Comentário'
     case 'rating':
       return 'Avaliação'
+    case 'SUBSCRIBE_TAG':
+      return 'Subscrição de Tag'
+    case 'UNSUBSCRIBE_TAG':
+      return 'Cancelamento de Tag'
+    case 'CREATE_TAG':
+      return 'Criação de Tag'
+    case 'DELETE_TAG':
+      return 'Eliminação de Tag'
+    case 'HIDE_TAG':
+      return 'Ocultação de Tag'
+    case 'SHOW_TAG':
+      return 'Exibição de Tag'
+    case 'ASSOCIATE_TAG':
+      return 'Associação de Tag'
+    case 'DISSOCIATE_TAG':
+      return 'Remoção de Tag'
+    case 'UPDATE_NAME':
+      return 'Atualização de Nome'
+    case 'UPDATE_EMAIL':
+      return 'Atualização de Email'
+    case 'UPDATE_PASSWORD':
+      return 'Atualização de Password'
+    case 'PASSWORD_RESET_REQUEST':
+      return 'Reset de Password'
+    case 'CREATE_USER':
+      return 'Criação de Utilizador'
+    case 'EDIT_USER':
+      return 'Edição de Utilizador'
+    case 'DELETE_USER':
+      return 'Eliminação de Utilizador'
+    case 'ACTIVATE_USER':
+      return 'Ativação de Utilizador'
+    case 'DEACTIVATE_USER':
+      return 'Desativação de Utilizador'
+    case 'CHANGE_USER_ROLE':
+      return 'Alteração de Role'
     default:
       return 'Atividade'
   }
@@ -206,9 +296,12 @@ onMounted(() => {
                       {{ getActivityLabel(activity.type) }}
                     </UBadge>
                   </div>
-                  <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">
-                    {{ activity.title }}
+                  <h3 class="font-medium text-gray-900 dark:text-gray-100">
+                    {{ activity.title || activity.description || 'Atividade sem descrição' }}
                   </h3>
+                  <p v-if="activity.details" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {{ activity.details }}
+                  </p>
                   <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {{ formatDate(activity.date) }}
                   </p>
