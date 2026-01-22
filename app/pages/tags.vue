@@ -100,6 +100,7 @@ const searchQuery = ref('')
 // Drag and drop state
 const isDraggingOver = ref(false)
 const isDraggingOverHidden = ref(false)
+const isDraggingOverTrash = ref(false)
 const draggedTag = ref<Tag | null>(null)
 
 // Loading states
@@ -238,6 +239,30 @@ async function toggleTagVisibility(tag: Tag, visible: boolean) {
     }
   } finally {
     loadingTagIds.value.delete(tag.id)
+  }
+}
+
+// Trash zone drag and drop handlers
+function handleDragOverTrash(event: DragEvent) {
+  event.preventDefault()
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+  isDraggingOverTrash.value = true
+}
+
+function handleDragLeaveTrash() {
+  isDraggingOverTrash.value = false
+}
+
+async function handleDropTrash(event: DragEvent) {
+  event.preventDefault()
+  isDraggingOverTrash.value = false
+  
+  if (draggedTag.value && canManageVisibility.value) {
+    // Open delete modal instead of deleting directly
+    selectedTag.value = draggedTag.value
+    draggedTag.value = null
   }
 }
 
@@ -386,7 +411,7 @@ async function unsubscribeFromTag(tag: Tag) {
     <template #body>
       <!-- Sticky bars: Subscribed and Hidden tags side by side -->
       <div class="sticky top-0 z-10 bg-background border-b border-default mb-6">
-        <div class="p-4 grid gap-6 grid-cols-2">
+        <div class="p-4 grid gap-6" :class="canManageVisibility ? 'grid-cols-3' : 'grid-cols-2'">
           <!-- Subscribed tags section -->
           <div
             :class="{ 
@@ -416,8 +441,14 @@ async function unsubscribeFromTag(tag: Tag) {
                   color="primary"
                   variant="solid"
                   size="md"
+                  :draggable="canManageVisibility && !loadingTagIds.has(tag.id)"
                   class="pr-8 cursor-default transition-all"
-                  :class="{ 'opacity-50': loadingTagIds.has(tag.id) }"
+                  :class="{ 
+                    'opacity-50': loadingTagIds.has(tag.id),
+                    'cursor-move': canManageVisibility && !loadingTagIds.has(tag.id)
+                  }"
+                  @dragstart="handleDragStart(tag, $event)"
+                  @dragend="handleDragEnd"
                 />
                 <UButton
                   v-if="hoveredTagId === tag.id && !loadingTagIds.has(tag.id)"
@@ -533,6 +564,50 @@ async function unsubscribeFromTag(tag: Tag) {
             >
               <UIcon name="i-lucide-arrow-down" class="size-4 text-amber-600 dark:text-amber-400 animate-bounce" />
               <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Solte para ocultar "{{ draggedTag.name }}"</span>
+            </div>
+          </div>
+
+          <!-- Trash zone (only for Administrador and Responsavel) -->
+          <div 
+            v-if="canManageVisibility"
+            :class="{ 
+              'border-2 border-red-500 border-dashed rounded-md': isDraggingOverTrash 
+            }"
+            @dragover="handleDragOverTrash"
+            @dragleave="handleDragLeaveTrash"
+            @drop="handleDropTrash"
+          >
+            <div class="flex items-center gap-2 mb-3">
+              <UIcon name="i-lucide-trash-2" class="text-red-600 dark:text-red-400 size-5" />
+              <h3 class="text-sm font-semibold">Eliminar Tag</h3>
+              <UTooltip text="Arraste tags para cá para as eliminar permanentemente">
+                <UIcon name="i-lucide-info" class="text-muted size-4" />
+              </UTooltip>
+            </div>
+
+            <!-- Trash zone area -->
+            <div 
+              class="flex flex-col items-center justify-center py-8 rounded-md border-2 border-dashed transition-colors"
+              :class="isDraggingOverTrash 
+                ? 'border-red-500 bg-red-50 dark:bg-red-950/20' 
+                : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'"
+            >
+              <UIcon 
+                name="i-lucide-trash-2" 
+                class="size-16 mb-3 transition-all"
+                :class="isDraggingOverTrash 
+                  ? 'text-red-500 scale-125' 
+                  : 'text-gray-400 dark:text-gray-600'"
+              />
+              <p 
+                class="text-sm font-medium transition-colors"
+                :class="isDraggingOverTrash 
+                  ? 'text-red-600 dark:text-red-400' 
+                  : 'text-gray-500 dark:text-gray-400'"
+              >
+                {{ isDraggingOverTrash && draggedTag ? `Eliminar "${draggedTag.name}"` : 'Arraste aqui para eliminar' }}
+              </p>
+              <p class="text-xs text-muted mt-1">Esta ação é permanente</p>
             </div>
           </div>
         </div>
