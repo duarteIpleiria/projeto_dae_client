@@ -16,6 +16,7 @@ const {
   loading,
   fetchUserPublications,
   togglePublicationVisibility,
+  togglePublicationConfidential,
   sortPublications,
   searchPublications,
   clearPublications
@@ -166,8 +167,15 @@ const loadPublications = async () => {
     data = data.map((p: any) => {
       const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
       const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
+      const isConfidential = p?.isConfidential ?? p?.is_confidential ?? p?.confidential ?? false
       
-      console.log(`📝 Publicação ${p.id} (${p.title}): isVisible=${p.isVisible}, is_visible=${p.is_visible}, visible=${p.visible} -> normalizado=${isVisible}`)
+      console.log(`📝 Publicação ${p.id} (${p.title}):`, {
+        raw_isConfidential: p.isConfidential,
+        raw_is_confidential: p.is_confidential, 
+        raw_confidential: p.confidential,
+        normalizado_confidential: isConfidential,
+        isVisible: isVisible
+      })
       
       return {
         ...p,
@@ -175,6 +183,7 @@ const loadPublications = async () => {
         ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
         comments_count: commentsCount,
         is_visible: isVisible,
+        is_confidential: isConfidential,
         comments: p?.comments || []
       }
     })
@@ -204,6 +213,26 @@ const loadPublications = async () => {
         return isVisible
       })
       console.log(`📊 Filtro 'visible' aplicado: ${beforeFilter} -> ${data.length}`)
+    }
+    
+    // Apply confidential filter client-side
+    if (selectedFilter.value === 'confidential') {
+      const beforeFilter = data.length
+      console.log('🔍 Antes do filtro confidencial:', data.map(p => ({ 
+        id: p.id, 
+        title: p.title, 
+        is_confidential: p.is_confidential,
+        confidential: p.confidential 
+      })))
+      
+      data = data.filter((p: any) => {
+        const isConfidential = p?.is_confidential ?? p?.confidential ?? false
+        console.log(`Publicação ${p.id}: is_confidential=${p.is_confidential}, confidential=${p.confidential}, resultado=${isConfidential}`)
+        return isConfidential
+      })
+      
+      console.log(`📊 Filtro 'confidential' aplicado: ${beforeFilter} -> ${data.length}`)
+      console.log('🔍 Depois do filtro:', data.map(p => ({ id: p.id, title: p.title })))
     }
     
     console.log('📊 Total de publicações após filtros:', data.length)
@@ -287,6 +316,27 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
     toast.add({
       title: 'Erro',
       description: 'Falha ao alterar visibilidade',
+      color: 'error'
+    })
+  }
+}
+
+// ===== TOGGLE CONFIDENCIAL =====
+const handleToggleConfidential = async (publicationId: number, newConfidential: boolean) => {
+  console.log('🔐 handleToggleConfidential chamado:', { publicationId, newConfidential })
+  try {
+    await togglePublicationConfidential(publicationId, newConfidential)
+    await loadPublications()
+    
+    toast.add({
+      title: 'Sucesso',
+      description: newConfidential ? 'Publicação marcada como confidencial' : 'Publicação marcada como não confidencial',
+      color: 'success'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Erro',
+      description: error?.data?.error || 'Falha ao alterar confidencialidade',
       color: 'error'
     })
   }
@@ -379,6 +429,7 @@ onMounted(async () => {
             :items="[
               { value: 'all', label: 'Todas' },
               { value: 'visible', label: 'Visíveis' },
+              { value: 'confidential', label: 'Confidenciais' },
               { value: 'hidden', label: 'Ocultas' }
             ]" 
             placeholder="Filtrar por visibilidade"
@@ -439,8 +490,11 @@ onMounted(async () => {
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
           :current-user-id="(user as any)?.id || 0" 
           :show-history="true"
-          @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
-          @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
+          @toggle-visibility="handleToggleVisibility" 
+          @toggle-confidential="handleToggleConfidential"
+          @rate="handleRatePublication"
+          @edit-summary="handleEditSummary" 
+          @comment-added="handleCommentAdded" />
       </div>
 
       <!-- Paginação -->

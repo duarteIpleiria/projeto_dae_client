@@ -15,6 +15,7 @@ export const usePublications = () => {
     average_rating: p?.average_rating ?? p?.averageRating ?? 0,
     ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
     is_visible: p?.is_visible ?? p?.visible ?? false,
+    is_confidential: p?.is_confidential ?? p?.confidential ?? false,
     comments: p?.comments || []
   })
 
@@ -76,6 +77,7 @@ export const usePublications = () => {
     title: string
     scientific_area: string
     is_visible: boolean
+    is_confidential?: boolean
     file: File
   }) => {
     loading.value = true
@@ -89,6 +91,9 @@ export const usePublications = () => {
       formData.append('title', data.title)
       formData.append('scientific_area', data.scientific_area)
       formData.append('is_visible', data.is_visible.toString())
+      if (data.is_confidential !== undefined) {
+        formData.append('is_confidential', data.is_confidential.toString())
+      }
       formData.append('file', data.file)
 
       const response = await $fetch(`${api}/posts`, {
@@ -222,6 +227,52 @@ export const usePublications = () => {
     } catch (e: any) {
       error.value = e.data?.message || 'Erro ao alterar visibilidade'
       console.error('Error toggling visibility:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // ===== TOGGLE CONFIDENCIAL =====
+  const togglePublicationConfidential = async (postId: number, confidential: boolean) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const token = getAuthToken()
+      const api = getApiBase()
+
+      console.log('🔐 Enviando request para:', `${api}/posts/${postId}/confidential`)
+      console.log('🔐 Body:', { confidential })
+
+      const response = await $fetch(`${api}/posts/${postId}/confidential`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
+        body: JSON.stringify({ confidential: confidential })
+      })
+
+      console.log('🔐 Resposta do backend:', response)
+
+      // Atualizar na lista local
+      const index = publications.value.findIndex(p => p.id === postId)
+      if (index !== -1) {
+        publications.value[index] = normalizePublication({
+          ...publications.value[index],
+          ...(response || {}),
+          is_confidential: (response as any)?.is_confidential ?? confidential,
+          confidential: (response as any)?.confidential ?? confidential
+        })
+      }
+
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Erro ao alterar confidencialidade'
+      console.error('Error toggling confidential:', e)
       throw e
     } finally {
       loading.value = false
@@ -502,6 +553,7 @@ export const usePublications = () => {
     searchPublications,
     sortPublications,
     togglePublicationVisibility,
+    togglePublicationConfidential,
     ratePublication,
     updateSummary,
     associateTags,

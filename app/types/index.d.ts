@@ -18,6 +18,7 @@ export interface Publication {
   scientificArea: string
   summary: string
   visible: boolean
+  confidential: boolean
   fileUrl: string
 
   author: {
