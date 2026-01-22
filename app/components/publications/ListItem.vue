@@ -111,6 +111,16 @@ const isAuthor = computed((): boolean => {
     props.publication.author.id === props.currentUserId
 })
 
+// Check if user can edit publication (author or admin)
+const canEdit = computed(() => {
+  // Admin can edit all publications
+  if (authStore.user?.role === 'Administrador') {
+    return true
+  }
+  // Other users can only edit their own publications
+  return isAuthor.value
+})
+
 // Check if user can change publication visibility (author or admin/responsavel)
 const canChangeVisibility = computed(() => {
   return isAuthor.value || canManageComments.value
@@ -790,7 +800,7 @@ const hasFile = computed(() => {
 
       <!-- Actions -->
       <div class="flex items-center gap-2 pt-4">
-        <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Edit"
+        <UButton v-if="canEdit" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Edit"
           @click="$emit('edit-summary', publication)" />
 
         <UButton v-if="props.showHistory && canViewHistory"
