@@ -3,13 +3,13 @@
     <div class="flex items-center justify-between">
       <h1 class="text-2xl font-bold">Hidden Content</h1>
       <UButton
-        v-if="selectedItems.size > 0"
+        v-if="selectedItems.length > 0"
         icon="i-lucide-eye"
         color="primary"
         @click="batchRestore"
         :loading="restoringBatch"
       >
-        Restore Selected ({{ selectedItems.size }})
+        Restore Selected ({{ selectedItems.length }})
       </UButton>
     </div>
 
@@ -218,7 +218,7 @@ const itemsPerPage = ref(20)
 const hiddenItems = ref([])
 const totalItems = ref(0)
 const loading = ref(false)
-const selectedItems = ref(new Set())
+const selectedItems = ref([])
 const restoringId = ref(null)
 const restoringBatch = ref(false)
 
@@ -252,7 +252,7 @@ const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage.valu
 // Fetch data
 const fetchHiddenContent = async () => {
   loading.value = true
-  selectedItems.value.clear()
+  selectedItems.value = []
   
   try {
     const params = new URLSearchParams({
