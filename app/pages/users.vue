@@ -59,7 +59,7 @@ onMounted(() => {
 // Search filter for sidebar
 const searchQuery = ref('')
 const selectedRole = ref<string | null>(null)
-const selectedStatus = ref<string | null>(null)
+const selectedStatus = ref<string | null>('active')
 
 const filteredUsers = computed(() => {
   let filtered = users.value

@@ -59,17 +59,16 @@ export default defineEventHandler(async (event) => {
         })
       }
 
-      // Check if this is an active/deactivate endpoint (EP25)
-      if (endpoint?.includes('/active')) {
-        const body = await readBody(event)
+      // Check if this is an activate/deactivate endpoint (EP25)
+      if (endpoint?.includes('/activate') || endpoint?.includes('/deactivate')) {
+        const action = endpoint?.includes('/activate') ? 'activate' : 'deactivate'
         
-        const response = await $fetch(`${apiBase}/users/${userId}/active`, {
+        const response = await $fetch(`${apiBase}/users/${userId}/${action}`, {
           method: 'PUT',
           headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json'
-          },
-          body: body
+          }
         })
 
         return response

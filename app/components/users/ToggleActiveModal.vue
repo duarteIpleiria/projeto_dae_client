@@ -50,47 +50,42 @@ async function onSubmit() {
   if (!props.user) return
 
   const newActiveStatus = !isActive.value
+  const endpoint = newActiveStatus ? 'activate' : 'deactivate'
+  
   console.log('[ToggleActiveModal] Toggling user:', {
     userId: props.user.id,
     currentStatus: isActive.value,
-    newStatus: newActiveStatus
+    newStatus: newActiveStatus,
+    endpoint: `${api}/users/${props.user.id}/${endpoint}`
   })
 
-  const { data, error } = await useFetch(`${api}/users/${props.user.id}`, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: {
-      name: props.user.name,
-      email: props.user.email,
-      role: props.user.role,
-      active: newActiveStatus
-    }
-  })
+  try {
+    const response = await $fetch(`${api}/users/${props.user.id}/${endpoint}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
 
-  if (error.value) {
-    console.error('Error toggling user status:', error.value)
+    console.log('[ToggleActiveModal] Backend response:', response)
+    
+    toast.add({
+      title: 'Sucesso',
+      description: `Utilizador ${newActiveStatus ? 'ativado' : 'desativado'} com sucesso`,
+      color: 'success'
+    })
+
+    open.value = false
+    emit('toggled')
+  } catch (error: any) {
+    console.error('Error toggling user status:', error)
     toast.add({
       title: 'Erro',
       description: 'Ocorreu um erro ao alterar o estado do utilizador',
       color: 'error'
     })
-    return
   }
-
-  const response = data.value as any
-  console.log('[ToggleActiveModal] Backend response:', response)
-  
-  toast.add({
-    title: 'Sucesso',
-    description: `Utilizador ${newActiveStatus ? 'ativado' : 'desativado'} com sucesso`,
-    color: 'success'
-  })
-
-  open.value = false
-  emit('toggled')
 }
 </script>
 
