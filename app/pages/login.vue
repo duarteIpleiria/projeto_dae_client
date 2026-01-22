@@ -34,58 +34,48 @@ const loginFormData = reactive({
 async function login() {
   loading.value = true
   try {
-    await $fetch(`${api}/auth/login`, {
+    const response = await $fetch(`${api}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json'
       },
-      body: loginFormData,
-      onResponse({ request, response, options }) {
-
-        if (response.status === 200) {
-
-          token.value = response._data.token
-          user.value = response._data.user
-
-          // Salvar dados do usuário no localStorage
-          authStore.setUser(response._data.user)
-
-          const authCookie = useCookie('auth_token', {
-            sameSite: 'lax',
-            path: '/',
-            secure: process.env.NODE_ENV === 'production'
-          })
-
-          authCookie.value = response._data.token 
-
-          toast.add({
-            title: 'Login com sucesso',
-            description: 'Bem-vindo ao dashboard',
-            color: 'success'
-          })
-
-          loading.value = false
-          router.push('/')
-        }
-        else if (response.status == 401) {
-          loginFormData.password = ''
-          loginFormData.email = ''
-          loading.value = false
-          toast.add({
-            title: 'Credenciais inválidas',
-            description: 'Verifica o email e a password',
-            color: 'error'
-          })
-        }
-
-
-      }
+      body: loginFormData
     })
 
+    if (response && response.token) {
+      // Configurar cookie
+      const authCookie = useCookie('auth_token', {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      })
+      authCookie.value = response.token
 
-  } catch (e) {
-    console.error('login request failed: ', e)
+      // Atualizar store
+      token.value = response.token
+      authStore.setUser(response.user)
+
+      toast.add({
+        title: 'Login com sucesso',
+        description: 'Bem-vindo ao dashboard',
+        color: 'success'
+      })
+
+      await router.push('/')
+    }
+  } catch (e: any) {
+    console.error('Login request failed:', e)
+    
+    loginFormData.password = ''
+    
+    toast.add({
+      title: 'Erro no login',
+      description: e.data?.message || 'Credenciais inválidas',
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
   }
 }
 
