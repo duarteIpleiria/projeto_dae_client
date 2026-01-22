@@ -1,6 +1,25 @@
 <script setup lang="ts">
-// Redirecionar para publicações quando acessar a página inicial
-navigateTo('/publications')
+import { sub } from 'date-fns'
+import type { DropdownMenuItem } from '@nuxt/ui'
+import type { Period, Range } from '~/types'
+
+const { isNotificationsSlideoverOpen } = useDashboard()
+
+const items = [[{
+  label: 'New mail',
+  icon: 'i-lucide-send',
+  to: '/inbox'
+}, {
+  label: 'New customer',
+  icon: 'i-lucide-user-plus',
+  to: '/customers'
+}]] satisfies DropdownMenuItem[][]
+
+const range = shallowRef<Range>({
+  start: sub(new Date(), { days: 14 }),
+  end: new Date()
+})
+const period = ref<Period>('daily')
 </script>
 
 <template>

@@ -18,6 +18,13 @@ const links = computed(() => {
   // Se não estiver autenticado, mostrar apenas publicações
   if (!authStore.user) {
     return [[{
+      label: 'Home',
+      icon: 'i-lucide-house',
+      to: '/',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
       label: 'Publications',
       icon: 'i-lucide-book-open-check',
       to: '/publications',
@@ -28,6 +35,13 @@ const links = computed(() => {
   }
 
   const baseLinks: NavigationMenuItem[] = [{
+    label: 'Home',
+    icon: 'i-lucide-house',
+    to: '/',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
     label: 'Publications',
     icon: 'i-lucide-book-open-check',
     to: '/publications',
