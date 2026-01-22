@@ -32,7 +32,7 @@ const selectedPublicationForEdit = ref<any>(null)
 const searchQuery = ref('')
 const selectedFilter = ref<'all' | 'visible' | 'hidden'>('all')
 const selectedTag = ref<number | null>(null)
-const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count'>('average_rating')
+const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count' | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('desc')
 
 const tags = ref<any[]>([])
@@ -100,17 +100,33 @@ const loadPublications = async () => {
     const api = config.public.apiBase
     const token = authStore.token
 
-    const response = await $fetch(`${api}/posts/sort`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: {
-        sort_by: sortBy.value,
-        order: sortOrder.value
-      }
-    }) as any
+    let response: any
+
+    // Se sortBy está definido, usa ordenação, senão pega ordem padrão da API
+    if (sortBy.value) {
+      response = await $fetch(`${api}/posts/sort`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
+        body: {
+          sort_by: sortBy.value,
+          order: sortOrder.value
+        }
+      })
+    } else {
+      // Buscar sem ordenação (ordem padrão da API)
+      response = await $fetch(`${api}/posts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        }
+      })
+    }
 
     console.log('Resposta completa:', response)
 

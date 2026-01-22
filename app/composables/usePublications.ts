@@ -46,7 +46,9 @@ export const usePublications = () => {
 
       const response = await $fetch(`${api}/users/me/posts${params.toString() ? '?' + params.toString() : ''}`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         }
       })
 
@@ -92,7 +94,9 @@ export const usePublications = () => {
       const response = await $fetch(`${api}/posts`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: formData
       })
@@ -127,7 +131,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: searchFilters
       })
@@ -161,7 +167,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: sortParams
       })
@@ -192,9 +200,11 @@ export const usePublications = () => {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
-        body: JSON.stringify({ is_visible: visible })
+        body: JSON.stringify({ visible: visible })
       })
 
       // Atualizar na lista local
@@ -231,7 +241,9 @@ export const usePublications = () => {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: {
           rating
@@ -275,9 +287,16 @@ export const usePublications = () => {
       const api = getApiBase()
       const formData = new FormData()
 
+      // Garantir encoding UTF-8 ao adicionar ao FormData
       if (data.title) formData.append('title', data.title)
       if (data.scientific_area) formData.append('scientific_area', data.scientific_area)
-      if (data.summary !== undefined)formData.append('summary', data.summary)
+      if (data.summary !== undefined) {
+        // Log para debug
+        console.log('📝 Summary original:', data.summary)
+        console.log('📝 Summary length:', data.summary.length)
+        console.log('📝 Summary charCodes:', [...data.summary].map(c => c.charCodeAt(0)))
+        formData.append('summary', data.summary)
+      }
       if (data.is_visible !== undefined) formData.append('is_visible', data.is_visible.toString())
       if (data.file) formData.append('file', data.file)
 
@@ -292,7 +311,9 @@ export const usePublications = () => {
       const response = await $fetch(`${api}/posts/${postId}`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
         },
         body: formData
       })

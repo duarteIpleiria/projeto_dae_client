@@ -28,6 +28,10 @@ interface Publication {
   is_visible?: boolean
   fileUrl?: string
   file_url?: string
+  fileName?: string
+  filename?: string
+  fileKey?: string
+  filekey?: string
   author: {
     id: number
     name: string
@@ -46,9 +50,12 @@ interface Publication {
 interface Props {
   publication: Publication
   currentUserId?: number
+  showHistory?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showHistory: false
+})
 
 const emit = defineEmits<{
   'toggle-visibility': [publicationId: number, currentVisibility: boolean]
@@ -62,6 +69,13 @@ const authStore = useAuthStore()
 // Check if user can see hidden tags
 const canSeeHiddenTags = computed(() => {
   return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
+// Check if user can manage comment visibility
+const canManageComments = computed(() => {
+  const canManage = authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  console.log('👤 User role:', authStore.user?.role, '| Can manage comments:', canManage)
+  return canManage
 })
 
 // Filter tags to display (exclude hidden tags for non-admin users)
@@ -79,6 +93,7 @@ const newComment = ref('')
 const commentLoading = ref(false)
 const manageTagsModalOpen = ref(false)
 const showHistoryModal = ref(false)
+const downloadingFile = ref(false)
 
 const toast = useToast()
 const config = useRuntimeConfig()
@@ -139,6 +154,49 @@ const submitComment = async () => {
     })
   } finally {
     commentLoading.value = false
+  }
+}
+
+// ===== TOGGLE VISIBILITY DE COMENTÁRIO =====
+const togglingCommentVisibility = ref<Record<number, boolean>>({})
+
+const toggleCommentVisibility = async (commentId: number, currentVisibility: boolean) => {
+  try {
+    togglingCommentVisibility.value[commentId] = true
+    
+    await $fetch(`${api}/posts/${props.publication.id}/comments/${commentId}/visibility`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json; charset=UTF-8',
+        'Accept-Charset': 'UTF-8'
+      },
+      body: {
+        visible: !currentVisibility
+      }
+    })
+
+    // Atualizar localmente
+    const comment = props.publication.comments?.find(c => c.id === commentId)
+    if (comment) {
+      comment.visible = !currentVisibility
+    }
+
+    toast.add({
+      title: 'Sucesso',
+      description: currentVisibility ? 'Comentário ocultado' : 'Comentário visível',
+      color: 'success'
+    })
+  } catch (error) {
+    console.error('Erro ao alterar visibilidade do comentário:', error)
+    toast.add({
+      title: 'Erro',
+      description: 'Erro ao alterar visibilidade do comentário',
+      color: 'error'
+    })
+  } finally {
+    delete togglingCommentVisibility.value[commentId]
   }
 }
 
@@ -207,6 +265,68 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
   emit('tags-updated', updatedPublication)
 }
 
+// ===== DOWNLOAD DO FICHEIRO =====
+const downloadFile = async () => {
+  try {
+    downloadingFile.value = true
+    const authStore = useAuthStore()
+    const token = authStore.token
+
+    const response = await fetch(`${api}/posts/${props.publication.id}/download`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao fazer download')
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // Tentar obter nome do arquivo do header
+    const contentDisposition = response.headers.get('content-disposition')
+    let filename = 'ficheiro'
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/)
+      if (filenameMatch) {
+        filename = filenameMatch[1]
+      }
+    }
+    
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    toast.add({
+      title: 'Sucesso',
+      description: 'Download iniciado',
+      color: 'success'
+    })
+  } catch (error) {
+    console.error('Erro ao fazer download:', error)
+    toast.add({
+      title: 'Erro',
+      description: 'Erro ao fazer download do ficheiro',
+      color: 'error'
+    })
+  } finally {
+    downloadingFile.value = false
+  }
+}
+
+const hasFile = computed(() => {
+  const fileName = props.publication.fileName || props.publication.filename
+  const fileKey = props.publication.fileKey || props.publication.filekey
+  return !!(fileName && fileKey)
+})
+
 </script>
 
 <template>
@@ -273,13 +393,17 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
 
-        <UButton v-if="isAuthor"
+        <UButton v-if="isAuthor && showHistory"
           color="secondary" variant="ghost" size="sm"
           icon="i-lucide-history" label="Histórico"
           @click="showHistoryModal = true" />
 
         <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
           @click="manageTagsModalOpen = true" />
+
+        <UButton v-if="hasFile" color="secondary" variant="ghost" size="sm" icon="i-lucide-download" label="Download"
+          :loading="downloadingFile"
+          @click="downloadFile" />
 
         <UButton v-if="!isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
           @click="$emit('rate', publication)" />
@@ -364,11 +488,25 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
                     <span class="text-sm font-semibold text-gray-900 dark:text-white">
                       {{ comment.author?.name || 'Utilizador' }}
                     </span>
+                    <UBadge v-if="!comment.visible" color="neutral" variant="subtle" size="xs">
+                      Oculto
+                    </UBadge>
                   </div>
                 </div>
-                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                  {{ formatCommentDate(comment.createdAt) }}
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {{ formatCommentDate(comment.createdAt) }}
+                  </span>
+                  <UButton 
+                    v-if="canManageComments"
+                    :icon="comment.visible ? 'i-lucide-eye-off' : 'i-lucide-eye'"
+                    size="xs"
+                    color="neutral"
+                    variant="ghost"
+                    :loading="togglingCommentVisibility[comment.id]"
+                    @click="toggleCommentVisibility(comment.id, comment.visible)"
+                  />
+                </div>
               </div>
               <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed pl-8">{{ comment.comment }}</p>
             </div>
@@ -436,6 +574,7 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
 
     <!-- History Modal -->
     <HistoryModal
+      v-if="showHistory"
       v-model="showHistoryModal"
       :publication-id="publication.id"
     />
