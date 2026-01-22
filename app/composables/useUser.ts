@@ -99,11 +99,54 @@ export const useUser = () => {
     }
   }
 
+  // ===== TOGGLE USER ACTIVE STATUS (EP25) =====
+  const toggleUserActive = async (userId: number, active: boolean) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const config = useRuntimeConfig()
+      const api = config.public.apiBase
+      const token = useCookie('auth_token').value
+
+      if (!token) {
+        error.value = 'Authentication required'
+        loading.value = false
+        throw new Error('Authentication required')
+      }
+
+      const response = await $fetch(`${api}/users/${userId}/active`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: { active: active }
+      })
+
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Failed to update user status'
+      console.error('[useUser] Error toggling user active status:', {
+        userId,
+        active,
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
     updateProfile,
     forgotPassword,
-    getCurrentUser
+    getCurrentUser,
+    toggleUserActive
   }
 }

@@ -34,7 +34,12 @@ export const useTags = () => {
       return tags.value
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to fetch tags'
-      console.error('Error fetching tags:', e)
+      console.error('[useTags] Error fetching tags:', {
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
       return []
     } finally {
       loading.value = false
@@ -66,7 +71,13 @@ export const useTags = () => {
       return true
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to subscribe to tag'
-      console.error('Error subscribing to tag:', e)
+      console.error('[useTags] Error subscribing to tag:', {
+        tagId,
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
       return false
     } finally {
       loading.value = false
@@ -98,7 +109,13 @@ export const useTags = () => {
       return true
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to unsubscribe from tag'
-      console.error('Error unsubscribing from tag:', e)
+      console.error('[useTags] Error unsubscribing from tag:', {
+        tagId,
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
       return false
     } finally {
       loading.value = false
@@ -140,7 +157,14 @@ export const useTags = () => {
       return response
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to toggle tag visibility'
-      console.error('Error toggling tag visibility:', e)
+      console.error('[useTags] Error toggling tag visibility:', {
+        tagId,
+        visible,
+        status: e.status,
+        statusText: e.statusText,
+        message: e.data?.message,
+        error: e
+      })
       throw e
     } finally {
       loading.value = false

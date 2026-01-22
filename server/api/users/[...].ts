@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
   try {
     if (method === 'GET') {
       // Fetch users from backend API
+      console.log('[Server Proxy] Fetching users from:', `${apiBase}/users`)
+      console.log('[Server Proxy] Auth header present:', !!authHeader)
+      
       const response = await $fetch(`${apiBase}/users`, {
         method: 'GET',
         headers: {
@@ -24,6 +27,7 @@ export default defineEventHandler(async (event) => {
         }
       })
 
+      console.log('[Server Proxy] Users fetched successfully, count:', Array.isArray(response) ? response.length : 'unknown')
       return response
     }
 
@@ -53,6 +57,22 @@ export default defineEventHandler(async (event) => {
           statusCode: 400,
           statusMessage: 'User ID parameter is required'
         })
+      }
+
+      // Check if this is an active/deactivate endpoint (EP25)
+      if (endpoint?.includes('/active')) {
+        const body = await readBody(event)
+        
+        const response = await $fetch(`${apiBase}/users/${userId}/active`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json'
+          },
+          body: body
+        })
+
+        return response
       }
 
       // Check if this is a role update endpoint
@@ -113,10 +133,19 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Method Not Allowed'
     })
   } catch (error: any) {
-    console.error('Error in users API:', error)
+    console.error('[Server Proxy] Error in users API:', {
+      method,
+      statusCode: error.statusCode,
+      statusMessage: error.statusMessage,
+      message: error.message,
+      data: error.data,
+      cause: error.cause
+    })
+    
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.message || 'Internal Server Error'
+      statusMessage: error.statusMessage || error.message || 'Internal Server Error',
+      data: error.data
     })
   }
 })
