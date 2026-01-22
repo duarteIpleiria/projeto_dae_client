@@ -126,6 +126,7 @@ export const useAuthStore = defineStore('authStore', () => {
     // Limpar localStorage também
     if (typeof window !== 'undefined') {
       localStorage.removeItem('user_info')
+      localStorage.removeItem('tags-store')
       console.log('[AUTH] Cleared localStorage')
     }
     

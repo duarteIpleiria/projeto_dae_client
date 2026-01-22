@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth-store.js";
+import { useTagsStore } from "~/stores/tags-store";
 
 const authStore = useAuthStore();
+const tagsStore = useTagsStore();
 const token = authStore.token;
 
 const config = useRuntimeConfig()
@@ -29,28 +31,17 @@ const { data: userData, refresh: refreshUser } = await useFetch(`${api}/auth/use
 
 const tags = computed(() => (data.value as any) || []);
 
-// Local state for optimistic updates - initialize immediately from userData
-const getInitialSubscribedIds = () => {
-  const user = userData.value as any
-  if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
-    return user.subscribedTags.map((tag: Tag) => tag.id)
-  }
-  return []
-}
-
-const localSubscribedTagIds = ref<number[]>(getInitialSubscribedIds())
-
-// Watch for server updates and sync
+// Initialize tags store with server data on mount
 watch(userData, (newData) => {
   const user = newData as any
   if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
-    localSubscribedTagIds.value = user.subscribedTags.map((tag: Tag) => tag.id)
+    tagsStore.setSubscribedTags(user.subscribedTags)
   }
 }, { immediate: true })
 
-// Get subscribed tag IDs (using local state for instant updates)
+// Get subscribed tag IDs from the persisted store
 const subscribedTagIds = computed(() => {
-  return localSubscribedTagIds.value
+  return tagsStore.subscribedTagIds
 })
 
 // Check if user can manage tag visibility (Administrador or Responsavel)
@@ -195,8 +186,8 @@ async function toggleTagVisibility(tag: Tag, visible: boolean) {
     await refresh()
     
     // If we just hid a subscribed tag, it should disappear from subscribed bar
-    if (!visible && subscribedTagIds.value.includes(tag.id)) {
-      localSubscribedTagIds.value = localSubscribedTagIds.value.filter(id => id !== tag.id)
+    if (!visible && tagsStore.isSubscribed(tag.id)) {
+      tagsStore.removeSubscribedTag(tag.id)
       await refreshUser()
     }
   } catch (error: any) {
@@ -227,7 +218,7 @@ async function toggleTagVisibility(tag: Tag, visible: boolean) {
 
 async function subscribeToTag(tag: Tag) {
   // Check if already subscribed
-  if (localSubscribedTagIds.value.includes(tag.id)) {
+  if (tagsStore.isSubscribed(tag.id)) {
     toast.add({
       title: 'Já subscrito',
       description: `Já está subscrito à tag "${tag.name}"`,
@@ -240,8 +231,8 @@ async function subscribeToTag(tag: Tag) {
 
   loadingTagIds.value.add(tag.id)
   
-  // Optimistic update - add tag ID immediately
-  localSubscribedTagIds.value = [...localSubscribedTagIds.value, tag.id]
+  // Optimistic update - add tag ID immediately to store
+  tagsStore.addSubscribedTag(tag.id)
   
   try {
     await $fetch(`${api}/tags/${tag.id}/subscribe`, {
@@ -267,7 +258,7 @@ async function subscribeToTag(tag: Tag) {
     console.error('Error data:', error.data)
     
     // Rollback optimistic update on error
-    localSubscribedTagIds.value = localSubscribedTagIds.value.filter(id => id !== tag.id)
+    tagsStore.removeSubscribedTag(tag.id)
     
     // Check if error is "already subscribed"
     const errorMessage = typeof error.data === 'string' ? error.data : error.data?.message || ''
@@ -278,7 +269,7 @@ async function subscribeToTag(tag: Tag) {
     if (isAlreadySubscribed) {
       console.log('Tag already subscribed on server, keeping it subscribed locally')
       // Keep it subscribed if server says it already is
-      localSubscribedTagIds.value = [...localSubscribedTagIds.value, tag.id]
+      tagsStore.addSubscribedTag(tag.id)
       
       // Force refresh to sync with server
       await Promise.all([refresh(), refreshUser()])
@@ -307,9 +298,11 @@ async function subscribeToTag(tag: Tag) {
 async function unsubscribeFromTag(tag: Tag) {
   loadingTagIds.value.add(tag.id)
   
-  // Optimistic update - remove tag ID immediately
-  const previousIds = [...localSubscribedTagIds.value]
-  localSubscribedTagIds.value = localSubscribedTagIds.value.filter(id => id !== tag.id)
+  // Store current state for rollback
+  const wasSubscribed = tagsStore.isSubscribed(tag.id)
+  
+  // Optimistic update - remove tag ID immediately from store
+  tagsStore.removeSubscribedTag(tag.id)
   
   try {
     await $fetch(`${api}/tags/${tag.id}/subscribe`, {
@@ -333,7 +326,9 @@ async function unsubscribeFromTag(tag: Tag) {
     console.error('Error unsubscribing from tag:', error)
     
     // Rollback optimistic update on error
-    localSubscribedTagIds.value = previousIds
+    if (wasSubscribed) {
+      tagsStore.addSubscribedTag(tag.id)
+    }
     
     toast.add({
       title: 'Erro ao cancelar subscrição',
@@ -366,7 +361,7 @@ async function unsubscribeFromTag(tag: Tag) {
     <template #body>
       <!-- Sticky bars: Subscribed and Hidden tags side by side -->
       <div class="sticky top-0 z-10 bg-background border-b border-default mb-6">
-        <div class="p-4 grid gap-6" :class="canManageVisibility ? 'grid-cols-2' : 'grid-cols-1'">
+        <div class="p-4 grid gap-6 grid-cols-2">
           <!-- Subscribed tags section -->
           <div
             :class="{ 
