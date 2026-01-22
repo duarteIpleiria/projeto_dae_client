@@ -411,7 +411,7 @@ async function unsubscribeFromTag(tag: Tag) {
     <template #body>
       <!-- Sticky bars: Subscribed and Hidden tags side by side -->
       <div class="sticky top-0 z-10 bg-background border-b border-default mb-6">
-        <div class="p-4 grid gap-6" :class="canManageVisibility ? 'grid-cols-3' : 'grid-cols-2'">
+        <div class="p-4 grid gap-4" :class="canManageVisibility ? 'lg:grid-cols-3 grid-cols-1' : 'lg:grid-cols-2 grid-cols-1'">
           <!-- Subscribed tags section -->
           <div
             :class="{ 
