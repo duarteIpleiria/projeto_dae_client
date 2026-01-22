@@ -141,12 +141,45 @@ export const useUser = () => {
     }
   }
 
+  // ===== CHANGE PASSWORD =====
+  const changePassword = async (data: {
+    currentPassword: string
+    newPassword: string
+  }) => {
+    loading.value = true
+    error.value = null
+
+    try {
+      const config = useRuntimeConfig()
+      const api = config.public.apiBase
+      const token = useCookie('auth_token').value
+
+      const response = await $fetch(`${api}/users/me/password`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: data
+      })
+
+      return response
+    } catch (e: any) {
+      error.value = e.data?.message || 'Erro ao alterar senha'
+      console.error('Error changing password:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
     updateProfile,
     forgotPassword,
     getCurrentUser,
-    toggleUserActive
+    toggleUserActive,
+    changePassword
   }
 }

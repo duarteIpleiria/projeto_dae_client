@@ -12,7 +12,7 @@ definePageMeta({
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
 
-const { updateProfile, forgotPassword, loading } = useUser()
+const { updateProfile, forgotPassword, changePassword, loading } = useUser()
 const toast = useToast()
 
 // ===== FORMULÁRIO DE EDIÇÃO DE PERFIL =====
@@ -70,6 +70,50 @@ const handleUpdateProfile = async (event: FormSubmitEvent<ProfileSchema>) => {
   }
 }
 
+// ===== FORMULÁRIO DE ALTERAÇÃO DE Palavra-passe =====
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, 'Palavra-passe atual é obrigatória'),
+  newPassword: z.string().min(6, 'Nova Palavra-passe deve ter pelo menos 6 caracteres'),
+  confirmPassword: z.string().min(6, 'Confirmação deve ter pelo menos 6 caracteres')
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Palavra-passes não coincidem',
+  path: ['confirmPassword']
+})
+
+type PasswordSchema = z.output<typeof passwordSchema>
+
+const passwordState = reactive<PasswordSchema>({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const handleChangePassword = async (event: FormSubmitEvent<PasswordSchema>) => {
+  try {
+    const response = await changePassword({
+      currentPassword: event.data.currentPassword,
+      newPassword: event.data.newPassword
+    })
+
+    toast.add({
+      title: 'Sucesso',
+      description: response?.message || 'Palavra-passe alterada com sucesso',
+      color: 'success'
+    })
+
+    // Reset form
+    passwordState.currentPassword = ''
+    passwordState.newPassword = ''
+    passwordState.confirmPassword = ''
+  } catch (e: any) {
+    toast.add({
+      title: 'Erro',
+      description: e?.data?.message || 'Erro ao alterar Palavra-passe',
+      color: 'error'
+    })
+  }
+}
+
 // ===== RECUPERAR PASSWORD =====
 const showPasswordRecovery = ref(false)
 const recoveryEmail = ref(user.value?.email || '')
@@ -89,7 +133,7 @@ const handleForgotPassword = async () => {
 
     toast.add({
       title: 'Email enviado',
-      description: 'Verifique sua caixa de entrada para redefinir a senha',
+      description: 'Verifique sua caixa de entrada para redefinir a Palavra-passe',
       color: 'success'
     })
 
@@ -155,7 +199,7 @@ const handleForgotPassword = async () => {
           </UForm>
         </UCard>
 
-        <!-- Recuperar Senha -->
+        <!-- Recuperar Palavra-passe -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
@@ -166,7 +210,7 @@ const handleForgotPassword = async () => {
 
           <div class="space-y-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Esqueceu sua senha? Enviaremos um email com instruções para redefinição.
+              Esqueceu sua Palavra-passe? Enviaremos um email com instruções para redefinição.
             </p>
 
             <div v-if="!showPasswordRecovery">
@@ -176,7 +220,7 @@ const handleForgotPassword = async () => {
                 variant="outline"
                 icon="i-lucide-mail"
               >
-                Recuperar Senha
+                Recuperar Palavra-passe
               </UButton>
             </div>
 
@@ -208,6 +252,55 @@ const handleForgotPassword = async () => {
               </div>
             </div>
           </div>
+        </UCard>
+
+        <!-- Alterar Palavra-passe -->
+        <UCard>
+          <template #header>
+            <div class="flex items-center gap-2">
+              <UIcon name="i-lucide-lock" />
+              <h3 class="font-semibold">Alterar Palavra-passe</h3>
+            </div>
+          </template>
+
+          <UForm :schema="passwordSchema" :state="passwordState" @submit="handleChangePassword" class="space-y-4">
+            <UFormField label="Palavra-passe Atual" name="currentPassword">
+              <UInput
+                v-model="passwordState.currentPassword"
+                type="password"
+                placeholder="Digite sua Palavra-passe atual"
+                icon="i-lucide-lock"
+              />
+            </UFormField>
+
+            <UFormField label="Nova Palavra-passe" name="newPassword">
+              <UInput
+                v-model="passwordState.newPassword"
+                type="password"
+                placeholder="Digite a nova Palavra-passe"
+                icon="i-lucide-lock"
+              />
+            </UFormField>
+
+            <UFormField label="Confirmar Nova Palavra-passe" name="confirmPassword">
+              <UInput
+                v-model="passwordState.confirmPassword"
+                type="password"
+                placeholder="Confirme a nova Palavra-passe"
+                icon="i-lucide-lock"
+              />
+            </UFormField>
+
+            <div class="flex justify-end">
+              <UButton
+                type="submit"
+                :loading="loading"
+                color="primary"
+              >
+                Alterar Palavra-passe
+              </UButton>
+            </div>
+          </UForm>
         </UCard>
 
         <!-- Informações da Conta -->
