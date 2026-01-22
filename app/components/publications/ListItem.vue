@@ -636,6 +636,8 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
 
 // ===== DOWNLOAD DO FICHEIRO =====
 const downloadFile = async () => {
+  if (!props.publication) return
+  
   try {
     downloadingFile.value = true
     const authStore = useAuthStore()
@@ -656,18 +658,7 @@ const downloadFile = async () => {
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    
-    // Tentar obter nome do arquivo do header
-    const contentDisposition = response.headers.get('content-disposition')
-    let filename = 'ficheiro'
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?(.+)"?/)
-      if (filenameMatch) {
-        filename = filenameMatch[1]
-      }
-    }
-    
-    link.download = filename
+    link.download = props.publication.fileName || 'ficheiro'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
