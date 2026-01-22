@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth-store'
 import ManageTagsModal from './ManageTagsModal.vue'
-import HistoryModal from './HistoryModal.vue'
 
 
 interface Comment {
@@ -62,6 +61,7 @@ const emit = defineEmits<{
   'rate': [publication: Publication]
   'edit-summary': [publication: Publication]
   'tags-updated': [publication: Publication]
+  'comment-added': [publicationId: number, comment: Comment]
 }>()
 
 const authStore = useAuthStore()
@@ -110,7 +110,12 @@ const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
 const manageTagsModalOpen = ref(false)
-const showHistoryModal = ref(false)
+const showHistoryDropdown = ref(false)
+const historyData = ref<any[]>([])
+const historyLoading = ref(false)
+const currentHistoryPage = ref(1)
+const totalHistoryItems = ref(0)
+const historyItemsPerPage = 5
 const downloadingFile = ref(false)
 const togglingAllComments = ref(false)
 
@@ -126,6 +131,258 @@ const visibilityOptions = [
 
 const handleVisibilityChange = () => {
   emit('toggle-visibility', props.publication.id, visibilityState.value)
+}
+
+// ===== HISTÓRICO =====
+const toggleHistory = async () => {
+  showHistoryDropdown.value = !showHistoryDropdown.value
+  if (showHistoryDropdown.value && historyData.value.length === 0) {
+    await loadHistory(1)
+  }
+}
+
+const loadHistory = async (page: number = 1) => {
+  try {
+    historyLoading.value = true
+    const response = await $fetch(`${api}/posts/${props.publication.id}/history`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      query: {
+        page,
+        limit: historyItemsPerPage
+      }
+    }) as any
+
+    historyData.value = response.data || []
+    totalHistoryItems.value = response.total || 0
+    currentHistoryPage.value = page
+  } catch (error) {
+    console.error('Erro ao carregar histórico:', error)
+    toast.add({
+      title: 'Erro',
+      description: 'Falha ao carregar histórico',
+      color: 'error'
+    })
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+const formatHistoryDate = (dateString: string) => {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('pt-PT', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
+}
+
+const formatHistoryChanges = (entry: any): string => {
+  const changes = entry.changes
+  if (!changes || typeof changes !== 'object') return 'Sem alterações'
+
+  const messages: string[] = []
+
+  // Helper para extrair valor de objetos complexos JSON
+  const extractValue = (obj: any): string => {
+    if (!obj) return ''
+    if (typeof obj === 'string') return obj
+    if (typeof obj === 'number') return String(obj)
+    if (typeof obj === 'boolean') return obj ? 'Sim' : 'Não'
+    
+    // Objetos JSON do backend
+    if (obj.string) return obj.string
+    if (obj.chars) return obj.chars
+    if (obj.valueType === 'TRUE') return 'Sim'
+    if (obj.valueType === 'FALSE') return 'Não'
+    if (obj.valueType === 'NUMBER' && obj.value !== undefined) return String(obj.value)
+    
+    // Arrays (tags)
+    if (Array.isArray(obj)) {
+      return obj.map(item => {
+        if (typeof item === 'string') return item
+        if (item?.name?.string) return item.name.string
+        if (item?.name) return item.name
+        return JSON.stringify(item)
+      }).join(', ')
+    }
+    
+    return String(obj)
+  }
+
+  // Helper para extrair booleano
+  const extractBoolean = (obj: any): boolean => {
+    if (obj === true || obj === 'true') return true
+    if (obj === false || obj === 'false') return false
+    if (typeof obj === 'string') {
+      const lower = obj.toLowerCase()
+      return lower === 'true' || lower === 'sim' || lower === 'yes'
+    }
+    if (typeof obj === 'object') {
+      if (obj.valueType === 'TRUE') return true
+      if (obj.valueType === 'FALSE') return false
+      if (obj.value !== undefined) return Boolean(obj.value)
+    }
+    return Boolean(obj)
+  }
+
+  for (const [field, value] of Object.entries(changes)) {
+    // Criação da publicação
+    if (field === 'created' || field === 'creation') {
+      messages.push('Publicação criada')
+      continue
+    }
+
+    // Título
+    if (field === 'title') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const newVal = extractValue(value.new)
+        if (newVal) {
+          messages.push(`Título: "${newVal}"`)
+        } else {
+          messages.push('Título alterado')
+        }
+      } else {
+        const val = extractValue(value)
+        if (val) {
+          messages.push(`Título: "${val}"`)
+        } else {
+          messages.push('Título alterado')
+        }
+      }
+      continue
+    }
+
+    // Resumo
+    if (field === 'summary') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const newVal = extractValue(value.new)
+        if (newVal && newVal.length < 100) {
+          messages.push(`Resumo: ${newVal}`)
+        } else {
+          messages.push('Resumo atualizado')
+        }
+      } else {
+        const val = extractValue(value)
+        if (val && val.length < 100) {
+          messages.push(`Resumo: ${val}`)
+        } else {
+          messages.push('Resumo atualizado')
+        }
+      }
+      continue
+    }
+
+    // Área científica
+    if (field === 'scientificArea' || field === 'scientific_area') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const newVal = extractValue(value.new)
+        if (newVal) {
+          messages.push(`Área científica: ${newVal}`)
+        } else {
+          messages.push('Área científica alterada')
+        }
+      } else {
+        const val = extractValue(value)
+        if (val) {
+          messages.push(`Área científica: ${val}`)
+        } else {
+          messages.push('Área científica alterada')
+        }
+      }
+      continue
+    }
+
+    // Visibilidade
+    if (field === 'visible' || field === 'visibility' || field === 'isVisible' || field === 'is_visible') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        // Usar extractBoolean para processar o objeto {valueType: 'TRUE'/'FALSE'}
+        const newVal = extractBoolean(value.new)
+        messages.push(newVal ? 'Publicação tornada visível' : 'Publicação ocultada')
+      } else {
+        const val = extractValue(value).toLowerCase()
+        const isVisible = val === 'sim' || val === 'true' || val.includes('visível')
+        messages.push(isVisible ? 'Publicação tornada visível' : 'Publicação ocultada')
+      }
+      continue
+    }
+
+    // Tags
+    if (field === 'tags') {
+      const val = extractValue(value)
+      if (val) {
+        messages.push(`Tags: ${val}`)
+      } else {
+        messages.push('Tags atualizadas')
+      }
+      continue
+    }
+
+    // Comentários
+    if (field === 'comment' || field === 'commentAdded') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const val = extractValue(value.new)
+        messages.push(val || 'Comentário adicionado')
+      } else {
+        const val = extractValue(value)
+        messages.push(val || 'Comentário adicionado')
+      }
+      continue
+    }
+
+    // Ratings
+    if (field === 'rating') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const val = extractValue(value.new)
+        messages.push(val || 'Avaliação recebida')
+      } else {
+        const val = extractValue(value)
+        messages.push(val || 'Avaliação recebida')
+      }
+      continue
+    }
+
+    // Visibilidade de comentários
+    if (field === 'commentVisibility') {
+      // Verificar se tem estrutura old/new
+      if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
+        const val = extractValue(value.new)
+        messages.push(val || 'Visibilidade de comentário alterada')
+      } else {
+        const val = extractValue(value)
+        messages.push(val || 'Visibilidade de comentário alterada')
+      }
+      continue
+    }
+
+    // Arquivo
+    if (field === 'file' || field === 'fileName') {
+      const val = extractValue(value)
+      if (val && val !== '[object Object]') {
+        messages.push(`Arquivo: ${val}`)
+      } else {
+        messages.push('Arquivo anexado')
+      }
+      continue
+    }
+
+    // Outros campos genéricos
+    const val = extractValue(value)
+    if (val && val !== '[object Object]') {
+      messages.push(`${field}: ${val}`)
+    }
+  }
+
+  return messages.length > 0 ? messages.join('\n') : 'Alterações realizadas'
 }
 
 // ===== COMENTÁRIOS =====
@@ -166,15 +423,12 @@ const submitComment = async () => {
       color: 'success'
     })
     
-    // Adicionar comentário ao array local
-    if (!props.publication.comments) {
-      props.publication.comments = []
-    }
-    props.publication.comments.push(response)
+    // Emitir evento para o componente pai atualizar
+    emit('comment-added', props.publication.id, response)
     
-    // Atualizar contador
-    if (props.publication.comments_count !== undefined) {
-      props.publication.comments_count++
+    // Recarregar histórico se estiver aberto
+    if (showHistoryDropdown.value) {
+      loadHistory()
     }
   } catch (error) {
     console.error('Erro ao adicionar comentário:', error)
@@ -366,6 +620,11 @@ const handleTagsUpdated = (updatedPublication: Publication) => {
     props.publication.tags = updatedPublication.tags
   }
   emit('tags-updated', updatedPublication)
+  
+  // Recarregar histórico se estiver aberto
+  if (showHistoryDropdown.value) {
+    loadHistory()
+  }
 }
 
 // ===== DOWNLOAD DO FICHEIRO =====
@@ -496,10 +755,11 @@ const hasFile = computed(() => {
         <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
           @click="$emit('edit-summary', publication)" />
 
-        <UButton v-if="isAuthor && showHistory"
+        <UButton v-if="props.showHistory"
           color="secondary" variant="ghost" size="sm"
-          icon="i-lucide-history" label="Histórico"
-          @click="showHistoryModal = true" />
+          :icon="showHistoryDropdown ? 'i-lucide-chevron-up' : 'i-lucide-history'" 
+          :label="showHistoryDropdown ? 'Ocultar Histórico' : 'Histórico'"
+          @click="toggleHistory" />
 
         <UButton color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
           @click="manageTagsModalOpen = true" />
@@ -692,11 +952,65 @@ const hasFile = computed(() => {
       @tags-updated="handleTagsUpdated"
     />
 
-    <!-- History Modal -->
-    <HistoryModal
-      v-if="showHistory"
-      v-model="showHistoryModal"
-      :publication-id="publication.id"
-    />
+    <!-- Histórico Dropdown -->
+    <div v-if="props.showHistory && showHistoryDropdown" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          Histórico de Atividade
+        </h4>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="historyLoading" class="flex justify-center py-8">
+        <UIcon name="i-lucide-loader" class="animate-spin text-2xl text-gray-400" />
+      </div>
+
+      <!-- Sem histórico -->
+      <div v-else-if="historyData.length === 0" class="text-center py-8 text-gray-500 text-sm">
+        <UIcon name="i-lucide-history" class="mx-auto text-3xl mb-2" />
+        <p>Nenhuma atividade registrada</p>
+      </div>
+
+      <!-- Lista de histórico -->
+      <div v-else class="space-y-3">
+        <div 
+          v-for="(entry, index) in historyData" 
+          :key="entry.edit_id || entry.id || index"
+          class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 bg-gray-50 dark:bg-gray-800/50"
+        >
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2">
+              <UBadge 
+                :color="index === 0 ? 'primary' : 'neutral'" 
+                variant="subtle"
+                size="xs"
+              >
+                v{{ entry.version || (totalHistoryItems - ((currentHistoryPage - 1) * historyItemsPerPage) - index) }}
+              </UBadge>
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                {{ entry.edited_by?.name || entry.editedBy?.name || 'Desconhecido' }}
+              </span>
+            </div>
+            <span class="text-xs text-gray-500">
+              {{ formatHistoryDate(entry.edited_at || entry.editedAt) }}
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 pl-2 border-l-2 border-gray-300 dark:border-gray-600 whitespace-pre-line">
+            {{ formatHistoryChanges(entry) }}
+          </p>
+        </div>
+
+        <!-- Paginação -->
+        <div v-if="totalHistoryItems > historyItemsPerPage" class="flex justify-center pt-2">
+          <UPagination 
+            :model-value="currentHistoryPage"
+            :page-count="Math.ceil(totalHistoryItems / historyItemsPerPage)" 
+            :total="totalHistoryItems"
+            size="xs"
+            @update:model-value="loadHistory"
+          />
+        </div>
+      </div>
+    </div>
   </UCard>
 </template>

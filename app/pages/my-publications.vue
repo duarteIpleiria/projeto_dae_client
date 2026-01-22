@@ -186,6 +186,16 @@ const handleEditModal = async () => {
   await loadPublications()
 }
 
+// ===== COMENTÁRIO ADICIONADO =====
+const handleCommentAdded = (publicationId: number, comment: any) => {
+  const publication = publications.value.find(p => p.id === publicationId)
+  if (publication) {
+    if (!publication.comments) publication.comments = []
+    publication.comments = [...publication.comments, comment]
+    if (publication.comments_count !== undefined) publication.comments_count++
+  }
+}
+
 // ===== PUBLICAÇÃO CRIADA COM SUCESSO =====
 const handlePublicationCreated = async () => {
   showAddModal.value = false
@@ -272,7 +282,7 @@ onMounted(() => {
           :current-user-id="user?.id || 0" 
           :show-history="true"
           @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
-          @edit-summary="handleEditSummary" />
+          @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
       </div>
 
       <!-- Paginação -->
