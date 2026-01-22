@@ -62,6 +62,7 @@ const emit = defineEmits<{
   'rate': [publication: Publication]
   'edit-summary': [publication: Publication]
   'tags-updated': [publication: Publication]
+  'comment-added': [publicationId: number, comment: Comment]
 }>()
 
 const authStore = useAuthStore()
@@ -166,16 +167,8 @@ const submitComment = async () => {
       color: 'success'
     })
     
-    // Adicionar comentário ao array local
-    if (!props.publication.comments) {
-      props.publication.comments = []
-    }
-    props.publication.comments.push(response)
-    
-    // Atualizar contador
-    if (props.publication.comments_count !== undefined) {
-      props.publication.comments_count++
-    }
+    // Emitir evento para o componente pai atualizar
+    emit('comment-added', props.publication.id, response)
   } catch (error) {
     console.error('Erro ao adicionar comentário:', error)
     toast.add({

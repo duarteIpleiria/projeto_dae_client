@@ -272,6 +272,16 @@ const handleEditModal = async () => {
   await loadPublications()
 }
 
+// ===== COMENTÁRIO ADICIONADO =====
+const handleCommentAdded = (publicationId: number, comment: any) => {
+  const publication = publications.value.find(p => p.id === publicationId)
+  if (publication) {
+    if (!publication.comments) publication.comments = []
+    publication.comments = [...publication.comments, comment]
+    if (publication.comments_count !== undefined) publication.comments_count++
+  }
+}
+
 // ===== PUBLICAÇÃO CRIADA COM SUCESSO =====
 const handlePublicationCreated = async () => {
   showAddModal.value = false
@@ -379,7 +389,7 @@ onMounted(async () => {
       <div v-else class="space-y-4">
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
           :current-user-id="(user as any)?.id || 0" @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
-          @edit-summary="handleEditSummary" />
+          @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
       </div>
 
       <!-- Paginação -->
