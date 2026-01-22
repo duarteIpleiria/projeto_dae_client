@@ -32,26 +32,24 @@ const toast = useToast()
 const selectedTagIds = ref<number[]>([])
 const currentTags = ref<Tag[]>([])
 
-// Check if user can see hidden tags
-const canSeeHiddenTags = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
-})
-
 // Load available tags when modal opens
 watch(open, async (isOpen) => {
   if (isOpen && props.publication) {
-    // Fetch tags with includeHidden parameter for admin users
-    await fetchTags(canSeeHiddenTags.value)
+    // Sempre buscar apenas tags visíveis (ocultas não devem estar disponíveis)
+    await fetchTags(false)
     currentTags.value = props.publication.tags || []
   }
 })
 
-// Transform tags for USelect - filter out already associated tags and hidden tags (for non-admins)
+// Transform tags for USelect - filter out already associated tags and hidden tags
 const tagOptions = computed(() => {
   const currentTagIds = currentTags.value.map(t => t.id)
   return availableTags.value
     .filter(tag => !currentTagIds.includes(tag.id))
-    .filter(tag => canSeeHiddenTags.value || tag.visible !== false)
+    .filter(tag => {
+      // Filtrar tags ocultas para TODOS os usuários
+      return tag.visible === true || tag.visible === undefined || tag.visible === null
+    })
     .map(tag => ({
       value: tag.id,
       label: tag.name
