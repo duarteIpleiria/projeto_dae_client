@@ -65,14 +65,22 @@ const loadHistory = async () => {
 
     const normalizeChanges = (changes: any): Array<{ field: string; value: string }> => {
       if (!changes || typeof changes !== 'object') return []
-      return Object.entries(changes).map(([field, raw]) => {
-        // Tags array
+      
+      return Object.entries(changes).map(([field, raw]: [string, any]) => {
+        // Formato novo: { new: {...}, old: {...} }
+        if (raw?.new && raw?.old) {
+          const oldVal = extractValue(raw.old)
+          const newVal = extractValue(raw.new)
+          return { field, value: `${oldVal} → ${newVal}` }
+        }
+        
+        // Arrays (tags)
         if (Array.isArray(raw)) {
           const val = raw.map((t: any) => t?.name?.string || t?.name || JSON.stringify(t)).join(', ')
           return { field, value: val }
         }
 
-        // Objects with valueType / chars / string
+        // Objetos com valueType / chars / string
         if (raw && typeof raw === 'object') {
           if (raw.valueType === 'TRUE') return { field, value: 'Visível: Sim' }
           if (raw.valueType === 'FALSE') return { field, value: 'Visível: Não' }
@@ -84,6 +92,18 @@ const loadHistory = async () => {
         // Fallback
         return { field, value: JSON.stringify(raw) }
       })
+    }
+
+    // Helper para extrair valor de objetos complexos
+    const extractValue = (obj: any): string => {
+      if (!obj) return '—'
+      if (typeof obj === 'string') return obj
+      if (obj.string) return obj.string
+      if (obj.chars) return obj.chars
+      if (obj.valueType === 'TRUE') return 'Sim'
+      if (obj.valueType === 'FALSE') return 'Não'
+      if (obj.value !== undefined) return String(obj.value)
+      return JSON.stringify(obj)
     }
 
     const mapEntry = (item: any, idx: number): HistoryEntry => {

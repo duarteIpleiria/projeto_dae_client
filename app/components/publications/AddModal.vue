@@ -112,11 +112,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <!-- Área Científica -->
         <UFormField label="Scientific Area" name="scientific_area">
-          <USelect v-model="state.scientific_area" class="w-full" placeholder="Scientific Area" :items="[
-            { label: 'Data Science', value: 'Data Science' },
-            { label: 'Materials Science', value: 'Materials Science' }
-          ]" />
-
+          <UInput v-model="state.scientific_area" class="w-full" placeholder="Ex: Data Science, Materials Science, Biologia, etc..." />
         </UFormField>
 
 
