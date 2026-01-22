@@ -50,23 +50,20 @@ async function onSubmit() {
   if (!props.user) return
 
   const newActiveStatus = !isActive.value
+  const endpoint = newActiveStatus ? 'activate' : 'deactivate'
+  
   console.log('[ToggleActiveModal] Toggling user:', {
     userId: props.user.id,
     currentStatus: isActive.value,
-    newStatus: newActiveStatus
+    newStatus: newActiveStatus,
+    endpoint: `${api}/users/${props.user.id}/${endpoint}`
   })
 
-  const { data, error } = await useFetch(`${api}/users/${props.user.id}`, {
+  const { data, error } = await useFetch(`${api}/users/${props.user.id}/${endpoint}`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json'
-    },
-    body: {
-      name: props.user.name,
-      email: props.user.email,
-      role: props.user.role,
-      active: newActiveStatus
     }
   })
 
