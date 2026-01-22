@@ -1,183 +1,321 @@
 <template>
-  <div class="h-full flex flex-col gap-4 p-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">Hidden Content</h1>
-      <UButton
-        v-if="selectedItems.length > 0"
-        icon="i-lucide-eye"
-        color="primary"
-        @click="batchRestore"
-        :loading="restoringBatch"
-      >
-        Restore Selected ({{ selectedItems.length }})
-      </UButton>
-    </div>
-
-    <!-- Filters -->
-    <div class="flex gap-4 items-center flex-wrap">
-      <USelect
-        v-model="selectedType"
-        :items="typeOptions"
-        placeholder="Select type"
-        class="w-48"
-      />
-      
-      <UInput
-        v-model="searchQuery"
-        icon="i-lucide-search"
-        placeholder="Search..."
-        class="flex-1 min-w-[200px]"
-      />
-      
-      <USelect
-        v-model="sortBy"
-        :items="sortOptions"
-        placeholder="Sort by"
-        class="w-40"
-      />
-      
-      <UButton
-        :icon="sortOrder === 'desc' ? 'i-lucide-arrow-down' : 'i-lucide-arrow-up'"
-        variant="ghost"
-        @click="toggleSortOrder"
-        :title="sortOrder === 'desc' ? 'Descending' : 'Ascending'"
-      />
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center items-center py-20">
-      <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin" />
-    </div>
-
-    <!-- Empty State -->
-    <div v-else-if="hiddenItems.length === 0" class="flex flex-col items-center justify-center py-20 text-gray-500 dark:text-gray-400">
-      <UIcon name="i-lucide-eye-off" class="w-16 h-16 mb-4" />
-      <p class="text-lg">No hidden {{ selectedType }} found</p>
-      <p v-if="searchQuery" class="text-sm mt-2">Try adjusting your search query</p>
-    </div>
-
-    <!-- Content List -->
-    <div v-else class="space-y-3 flex-1 overflow-y-auto">
-      <!-- Publications -->
-      <template v-if="selectedType === 'publications'">
-        <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-          <div class="flex items-start gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-lg truncate">{{ item.title }}</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ item.scientificArea }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                    by {{ item.author?.name }} • {{ formatDate(item.updatedAt || item.createdAt) }}
-                  </p>
-                </div>
-                <div class="flex gap-2 flex-shrink-0">
-                  <UButton
-                    icon="i-lucide-external-link"
-                    variant="ghost"
-                    size="sm"
-                    :to="`/publications`"
-                    title="View in publications"
-                  />
-                  <UButton
-                    icon="i-lucide-eye"
-                    variant="ghost"
-                    size="sm"
-                    :loading="restoringId === item.id"
-                    @click="restoreVisibility(item.id, 'publication')"
-                    title="Restore visibility"
-                  />
-                </div>
-              </div>
-              
-              <p v-if="item.summary" class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{{ item.summary }}</p>
-              
-              <div v-if="item.tags?.length" class="flex gap-1 mt-2 flex-wrap">
-                <UBadge v-for="tag in item.tags" :key="tag.id" variant="outline" size="xs">
-                  {{ tag.name }}
-                </UBadge>
-              </div>
-            </div>
-          </div>
-        </UCard>
+  <UDashboardPanel
+    id="hidden-content"
+    :default-size="30"
+    :min-size="25"
+    :max-size="40"
+    resizable
+  >
+    <UDashboardNavbar title="Hidden Content">
+      <template #leading>
+        <UDashboardSidebarCollapse />
       </template>
 
-      <!-- Comments -->
-      <template v-if="selectedType === 'comments'">
-        <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-          <div class="flex items-start gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2 mb-2">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2">
-                    <div class="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
-                      <span class="text-xs font-semibold text-white">
-                        {{ (item.author?.name?.[0] || 'A').toUpperCase() }}
-                      </span>
-                    </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-500">
-                      {{ item.author?.name }} • {{ formatDate(item.createdAt) }}
-                    </p>
-                  </div>
-                </div>
-                <div class="flex gap-2 flex-shrink-0">
-                  <UButton
-                    icon="i-lucide-external-link"
-                    variant="ghost"
-                    size="sm"
-                    :to="`/publications?id=${item.postId}`"
-                    title="View publication"
-                  />
-                  <UButton
-                    icon="i-lucide-eye"
-                    variant="ghost"
-                    size="sm"
-                    :loading="restoringId === item.id"
-                    @click="restoreVisibility(item.id, 'comment', item.postId)"
-                    title="Restore visibility"
-                  />
-                </div>
-              </div>
-              
-              <p class="text-sm text-gray-700 dark:text-gray-300">{{ item.comment }}</p>
-            </div>
-          </div>
-        </UCard>
+      <template #trailing>
+        <UBadge :label="totalItems" variant="subtle" />
       </template>
+    </UDashboardNavbar>
 
-      <!-- Tags -->
-      <template v-if="selectedType === 'tags'">
-        <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-          <div class="flex items-center gap-4">
-            <div class="flex-1 flex items-center justify-between">
-              <div>
-                <h3 class="font-semibold text-lg">{{ item.name }}</h3>
-              </div>
-              <UButton
-                icon="i-lucide-eye"
-                variant="ghost"
-                size="sm"
-                :loading="restoringId === item.id"
-                @click="restoreVisibility(item.id, 'tag')"
-                title="Restore visibility"
-              />
-            </div>
-          </div>
-        </UCard>
-      </template>
-    </div>
-
-    <!-- Pagination -->
-    <div v-if="totalPages > 1" class="flex justify-center items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <div class="text-sm text-gray-600 dark:text-gray-400">
-        Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }}-{{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }}
+    <!-- Sidebar List -->
+    <div class="flex flex-col h-full">
+      <!-- Filters -->
+      <div class="p-3 border-b border-default space-y-2">
+        <div class="flex gap-2">
+          <USelect
+            v-model="selectedType"
+            :items="typeOptions"
+            placeholder="Select type"
+            size="sm"
+            class="flex-1"
+          />
+          
+          <UInput
+            v-model="searchQuery"
+            icon="i-lucide-search"
+            placeholder="Search..."
+            size="sm"
+            class="flex-1"
+          />
+        </div>
+        
+        <div class="flex gap-2">
+          <USelect
+            v-model="sortBy"
+            :items="sortOptions"
+            placeholder="Sort by"
+            size="sm"
+            class="flex-1"
+          />
+          
+          <UButton
+            :icon="sortOrder === 'desc' ? 'i-lucide-arrow-down' : 'i-lucide-arrow-up'"
+            variant="ghost"
+            size="sm"
+            @click="toggleSortOrder"
+            :title="sortOrder === 'desc' ? 'Descending' : 'Ascending'"
+          />
+        </div>
       </div>
-      <UPagination
-        v-model="currentPage"
-        :total="totalPages"
-        :max="7"
-      />
+
+      <!-- Loading State -->
+      <div v-if="loading" class="flex-1 flex justify-center items-center">
+        <div class="text-center">
+          <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin mx-auto mb-2" />
+          <p class="text-sm text-muted">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="hiddenItems.length === 0" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+        <UIcon name="i-lucide-eye-off" class="w-12 h-12 mb-4 text-muted" />
+        <p class="text-sm text-muted">No hidden {{ selectedType === 'all' ? 'content' : selectedType }} found</p>
+        <p v-if="searchQuery" class="text-xs text-muted mt-2">Try adjusting your search query</p>
+      </div>
+
+      <!-- Content List -->
+      <div v-else class="flex-1 overflow-y-auto divide-y divide-default">
+        <div
+          v-for="item in hiddenItems"
+          :key="`${getItemType(item)}-${item.id}`"
+          :class="[
+            'p-4 hover:bg-muted/50 transition-colors cursor-pointer flex items-start gap-3',
+            selectedItemViewId?.id === item.id && selectedItemViewId?.type === getItemType(item) && 'bg-muted'
+          ]"
+          @click="selectedItemViewId = { id: item.id, type: getItemType(item) }"
+        >
+          <!-- Type Indicator Dot -->
+          <div 
+            :class="[
+              'w-3 h-3 rounded-full mt-1.5 flex-shrink-0',
+              getItemType(item) === 'publications' && 'bg-blue-500',
+              getItemType(item) === 'comments' && 'bg-green-500',
+              getItemType(item) === 'tags' && 'bg-amber-500'
+            ]"
+            :title="getItemType(item)"
+          ></div>
+
+          <!-- Item Content -->
+          <div class="flex-1 min-w-0">
+            <!-- Publication -->
+            <template v-if="getItemType(item) === 'publications'">
+              <h3 class="font-medium text-sm truncate mb-1">{{ item.title }}</h3>
+              <p class="text-xs text-muted truncate">{{ item.scientificArea }}</p>
+              <p class="text-xs text-muted mt-1">{{ formatDate(item.updatedAt || item.createdAt) }}</p>
+            </template>
+
+            <!-- Comment -->
+            <template v-else-if="getItemType(item) === 'comments'">
+              <div class="flex items-center gap-2 mb-1">
+                <div class="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+                  <span class="text-xs font-semibold text-white">
+                    {{ (item.author?.name?.[0] || 'A').toUpperCase() }}
+                  </span>
+                </div>
+                <p class="text-xs text-muted truncate">{{ item.author?.name }}</p>
+              </div>
+              <p class="text-sm line-clamp-2">{{ item.comment }}</p>
+              <p class="text-xs text-muted mt-1">{{ formatDate(item.createdAt) }}</p>
+            </template>
+
+            <!-- Tag -->
+            <template v-else-if="getItemType(item) === 'tags'">
+              <h3 class="font-medium text-sm">{{ item.name }}</h3>
+            </template>
+          </div>
+        </div>
+      </div>
     </div>
+  </UDashboardPanel>
+
+  <!-- Detail View -->
+  <div v-if="selectedItemForView" class="flex-1 flex flex-col">
+    <UDashboardNavbar 
+      :title="selectedItemForView._type === 'tags' ? selectedItemForView.name : (selectedItemForView.title || 'Comment Details')"
+    >
+      <template #right>
+        <UButton
+          icon="i-lucide-x"
+          color="neutral"
+          variant="ghost"
+          @click="selectedItemViewId = null"
+        />
+      </template>
+    </UDashboardNavbar>
+
+    <div class="flex-1 overflow-y-auto p-6">
+      <div class="max-w-3xl mx-auto space-y-6">
+        <!-- Publication Details -->
+        <template v-if="getItemType(selectedItemForView) === 'publications'">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-4 h-4 rounded-full bg-blue-500"></div>
+            <UBadge label="Publication" color="blue" variant="soft" />
+          </div>
+
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold text-lg">{{ selectedItemForView.title }}</h3>
+            </template>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-muted">Scientific Area</label>
+                <p class="text-sm">{{ selectedItemForView.scientificArea }}</p>
+              </div>
+
+              <UDivider />
+
+              <div>
+                <label class="text-sm font-medium text-muted">Author</label>
+                <p class="text-sm">{{ selectedItemForView.author?.name || 'Unknown' }}</p>
+              </div>
+
+              <UDivider />
+
+              <div v-if="selectedItemForView.summary">
+                <label class="text-sm font-medium text-muted">Summary</label>
+                <p class="text-sm">{{ selectedItemForView.summary }}</p>
+              </div>
+
+              <UDivider v-if="selectedItemForView.summary" />
+
+              <div v-if="selectedItemForView.tags?.length">
+                <label class="text-sm font-medium text-muted">Tags</label>
+                <div class="flex gap-1 mt-2 flex-wrap">
+                  <UBadge v-for="tag in selectedItemForView.tags" :key="tag.id" variant="outline" size="xs">
+                    {{ tag.name }}
+                  </UBadge>
+                </div>
+              </div>
+
+              <UDivider v-if="selectedItemForView.tags?.length" />
+
+              <div>
+                <label class="text-sm font-medium text-muted">Created</label>
+                <p class="text-sm">{{ formatDate(selectedItemForView.createdAt) }}</p>
+              </div>
+
+              <UDivider />
+
+              <div>
+                <label class="text-sm font-medium text-muted">Last Updated</label>
+                <p class="text-sm">{{ formatDate(selectedItemForView.updatedAt) }}</p>
+              </div>
+            </div>
+          </UCard>
+
+          <div class="flex gap-3">
+            <UButton
+              icon="i-lucide-eye"
+              color="primary"
+              :loading="restoringId === selectedItemForView.id"
+              @click="restoreVisibility(selectedItemForView.id, 'publication')"
+            >
+              Restore Visibility
+            </UButton>
+            <UButton
+              icon="i-lucide-external-link"
+              variant="outline"
+              :to="`/publications`"
+            >
+              View in Publications
+            </UButton>
+          </div>
+        </template>
+
+        <!-- Comment Details -->
+        <template v-else-if="getItemType(selectedItemForView) === 'comments'">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-4 h-4 rounded-full bg-green-500"></div>
+            <UBadge label="Comment" color="green" variant="soft" />
+          </div>
+
+          <UCard>
+            <template #header>
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
+                  <span class="text-sm font-semibold text-white">
+                    {{ (selectedItemForView.author?.name?.[0] || 'A').toUpperCase() }}
+                  </span>
+                </div>
+                <div>
+                  <h3 class="font-semibold">{{ selectedItemForView.author?.name || 'Unknown' }}</h3>
+                  <p class="text-xs text-muted">{{ formatDate(selectedItemForView.createdAt) }}</p>
+                </div>
+              </div>
+            </template>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-muted">Comment</label>
+                <p class="text-sm mt-2">{{ selectedItemForView.comment }}</p>
+              </div>
+
+              <UDivider />
+
+              <div>
+                <label class="text-sm font-medium text-muted">Last Updated</label>
+                <p class="text-sm">{{ formatDate(selectedItemForView.updatedAt) }}</p>
+              </div>
+            </div>
+          </UCard>
+
+          <div class="flex gap-3">
+            <UButton
+              icon="i-lucide-eye"
+              color="primary"
+              :loading="restoringId === selectedItemForView.id"
+              @click="restoreVisibility(selectedItemForView.id, 'comment', selectedItemForView.postId)"
+            >
+              Restore Visibility
+            </UButton>
+            <UButton
+              icon="i-lucide-external-link"
+              variant="outline"
+              :to="`/publications?id=${selectedItemForView.postId}`"
+            >
+              View Publication
+            </UButton>
+          </div>
+        </template>
+
+        <!-- Tag Details -->
+        <template v-else-if="getItemType(selectedItemForView) === 'tags'">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="w-4 h-4 rounded-full bg-amber-500"></div>
+            <UBadge label="Tag" color="amber" variant="soft" />
+          </div>
+
+          <UCard>
+            <template #header>
+              <h3 class="font-semibold text-lg">{{ selectedItemForView.name }}</h3>
+            </template>
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-muted">Tag ID</label>
+                <p class="text-sm">{{ selectedItemForView.id }}</p>
+              </div>
+            </div>
+          </UCard>
+
+          <UButton
+            icon="i-lucide-eye"
+            color="primary"
+            :loading="restoringId === selectedItemForView.id"
+            @click="restoreVisibility(selectedItemForView.id, 'tag')"
+          >
+            Restore Visibility
+          </UButton>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state when no item selected -->
+  <div v-else class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+    <UIcon name="i-lucide-mouse-pointer-click" class="w-16 h-16 mb-4 text-muted" />
+    <p class="text-lg font-medium">Select an item to view details</p>
+    <p class="text-sm text-muted mt-2">Click on any hidden content item to see more information</p>
   </div>
 </template>
 
@@ -215,16 +353,36 @@ const loading = ref(false)
 const selectedItems = ref([])
 const restoringId = ref(null)
 const restoringBatch = ref(false)
+const selectedItemViewId = ref<{id: number, type: string} | null>(null)
+
+// Computed property for selected item details
+const selectedItemForView = computed(() => {
+  if (!selectedItemViewId.value) return null
+  return hiddenItems.value.find((item: any) => {
+    const itemType = item._type || selectedType.value
+    return item.id === selectedItemViewId.value.id && itemType === selectedItemViewId.value.type
+  }) || null
+})
+
+// Get item type (works for both 'all' view and specific type views)
+const getItemType = (item: any) => {
+  return item._type || selectedType.value
+}
 
 // Options
 const typeOptions = [
+  { label: 'All', value: 'all' },
   { label: 'Publications', value: 'publications' },
   { label: 'Comments', value: 'comments' },
   { label: 'Tags', value: 'tags' }
 ]
 
 const sortOptions = computed(() => {
-  if (selectedType.value === 'publications') {
+  if (selectedType.value === 'all') {
+    return [
+      { label: 'Last Updated', value: 'updatedAt' }
+    ]
+  } else if (selectedType.value === 'publications') {
     return [
       { label: 'Last Updated', value: 'updatedAt' },
       { label: 'Title', value: 'title' }
@@ -249,26 +407,67 @@ const fetchHiddenContent = async () => {
   selectedItems.value = []
   
   try {
-    const params = new URLSearchParams({
-      type: selectedType.value,
-      page: currentPage.value.toString(),
-      limit: itemsPerPage.value.toString(),
-      sortBy: sortBy.value,
-      order: sortOrder.value
-    })
-    
-    if (searchQuery.value.trim()) {
-      params.append('search', searchQuery.value.trim())
-    }
-    
-    const response = await $fetch(`${api}/hidden-content?${params}`, {
-      headers: {
-        Authorization: `Bearer ${authStore.token}`
+    if (selectedType.value === 'all') {
+      // Fetch all types
+      const types = ['publications', 'comments', 'tags']
+      const promises = types.map(type => {
+        const params = new URLSearchParams({
+          type,
+          page: '1',
+          limit: '100',
+          sortBy: sortBy.value,
+          order: sortOrder.value
+        })
+        
+        if (searchQuery.value.trim()) {
+          params.append('search', searchQuery.value.trim())
+        }
+        
+        return $fetch(`${api}/hidden-content?${params}`, {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`
+          }
+        }).then(res => ({ type, data: res.data.map(item => ({ ...item, _type: type })) }))
+      })
+      
+      const results = await Promise.all(promises)
+      const allItems = results.flatMap(r => r.data)
+      
+      // Sort combined results
+      allItems.sort((a, b) => {
+        const aVal = a[sortBy.value]
+        const bVal = b[sortBy.value]
+        if (sortOrder.value === 'desc') {
+          return bVal > aVal ? 1 : -1
+        } else {
+          return aVal > bVal ? 1 : -1
+        }
+      })
+      
+      hiddenItems.value = allItems
+      totalItems.value = allItems.length
+    } else {
+      const params = new URLSearchParams({
+        type: selectedType.value,
+        page: currentPage.value.toString(),
+        limit: itemsPerPage.value.toString(),
+        sortBy: sortBy.value,
+        order: sortOrder.value
+      })
+      
+      if (searchQuery.value.trim()) {
+        params.append('search', searchQuery.value.trim())
       }
-    })
-    
-    hiddenItems.value = response.data
-    totalItems.value = response.total
+      
+      const response = await $fetch(`${api}/hidden-content?${params}`, {
+        headers: {
+          Authorization: `Bearer ${authStore.token}`
+        }
+      })
+      
+      hiddenItems.value = response.data
+      totalItems.value = response.total
+    }
   } catch (error) {
     console.error('Error fetching hidden content:', error)
     toast.add({
@@ -291,7 +490,8 @@ watch([selectedType, currentPage, sortBy, sortOrder], () => {
 // Reset to page 1 when type changes
 watch(selectedType, () => {
   currentPage.value = 1
-  sortBy.value = selectedType.value === 'publications' ? 'updatedAt' : 
+  sortBy.value = selectedType.value === 'all' ? 'updatedAt' :
+                 selectedType.value === 'publications' ? 'updatedAt' : 
                  selectedType.value === 'comments' ? 'createdAt' : 'name'
 })
 
