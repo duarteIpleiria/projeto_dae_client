@@ -142,6 +142,7 @@ const handleVisibilityChange = () => {
 
 // ===== HISTÓRICO =====
 const toggleHistory = async () => {
+  console.log('🔍 Clicou em histórico, showHistoryDropdown:', showHistoryDropdown.value)
   showHistoryDropdown.value = !showHistoryDropdown.value
   if (showHistoryDropdown.value && historyData.value.length === 0) {
     await loadHistory(1)
@@ -150,6 +151,10 @@ const toggleHistory = async () => {
 
 const loadHistory = async (page: number = 1) => {
   try {
+    console.log('📜 Carregando histórico para publicação:', props.publication.id)
+    console.log('🔐 Token:', token ? 'Presente' : 'AUSENTE')
+    console.log('📍 URL:', `${api}/posts/${props.publication.id}/history`)
+    
     historyLoading.value = true
     const response = await $fetch(`${api}/posts/${props.publication.id}/history`, {
       method: 'GET',
@@ -162,11 +167,14 @@ const loadHistory = async (page: number = 1) => {
       }
     }) as any
 
-    historyData.value = response.data || []
-    totalHistoryItems.value = response.total || 0
+    console.log('✅ Histórico carregado:', response)
+    historyData.value = Array.isArray(response) ? response : (response?.data || [])
+    totalHistoryItems.value = historyData.value.length
     currentHistoryPage.value = page
   } catch (error) {
     console.error('Erro ao carregar histórico:', error)
+    console.error('Status:', (error as any)?.status)
+    console.error('Data:', (error as any)?.data)
     toast.add({
       title: 'Erro',
       description: 'Falha ao carregar histórico',
@@ -954,7 +962,7 @@ const hasFile = computed(() => {
     <div v-if="props.showHistory && showHistoryDropdown" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex items-center justify-between mb-3">
         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Histórico de Atividade
+          Histórico de Atividade ({{ historyData.length }} entradas)
         </h4>
       </div>
 
