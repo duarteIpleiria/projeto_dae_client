@@ -62,8 +62,8 @@ const handleSubmit = async () => {
     open.value = false
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
-      description: e.data?.message || 'Erro ao atualizar resumo',
+      title: 'Error',
+      description: e.data?.message || 'Failed to update summary',
       color: 'error'
     })
   }
@@ -71,19 +71,19 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Editar Resumo">
+  <UModal v-model:open="open" title="Edit Summary">
     <template #body>
       <div v-if="publication" class="space-y-4">
         <!-- Título da publicação -->
         <div>
           <h3 class="font-semibold text-lg">{{ publication.title }}</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Edite o resumo gerado automaticamente
+            Edit the auto-generated summary
           </p>
         </div>
 
-        <UFormGroup label="Resumo" description="Pode ajustar ou corrigir o texto antes de o guardar">
-          <UTextarea v-model="editedSummary" :rows="8" placeholder="Digite o resumo da publicação..." />
+        <UFormGroup label="Summary" description="You can adjust or correct the text before saving">
+          <UTextarea v-model="editedSummary" :rows="8" placeholder="Type the publication summary..." />
 
           <template #help>
             <span class="text-xs text-gray-400">
@@ -95,8 +95,8 @@ const handleSubmit = async () => {
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <UButton label="Cancelar" color="da" variant="ghost" @click="open = false" />
-          <UButton label="Salvar" color="primary" :disabled="!editedSummary.trim()" :loading="loading"
+          <UButton label="Cancel" color="da" variant="ghost" @click="open = false" />
+          <UButton label="Save" color="primary" :disabled="!editedSummary.trim()" :loading="loading"
             @click="handleSubmit" />
         </div>
       </div>

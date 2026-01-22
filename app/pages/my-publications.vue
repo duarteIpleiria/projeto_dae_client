@@ -200,8 +200,8 @@ const handleCommentAdded = (publicationId: number, comment: any) => {
 const handlePublicationCreated = async () => {
   showAddModal.value = false
   toast.add({
-    title: 'Sucesso',
-    description: 'Publicação criada com sucesso',
+    title: 'Success',
+    description: 'Publication created successfully',
     color: 'success'
   })
   await loadPublications()
@@ -221,14 +221,14 @@ onMounted(() => {
     <!-- HEADER -->
     <template #header>
       <!-- Navbar -->
-      <UDashboardNavbar title="Publicações">
+      <UDashboardNavbar title="Publications">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
           <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
-            Nova Publicação
+            New Publication
           </UButton>
         </template>
       </UDashboardNavbar>
@@ -243,11 +243,11 @@ onMounted(() => {
           <USelect 
             v-model="selectedFilter" 
             :items="[
-              { value: 'all', label: 'Todas' },
-              { value: 'visible', label: 'Visíveis' },
-              { value: 'hidden', label: 'Ocultas' }
+              { value: 'all', label: 'All' },
+              { value: 'visible', label: 'Visible' },
+              { value: 'hidden', label: 'Hidden' }
             ]" 
-            placeholder="Filtrar por visibilidade"
+            placeholder="Filter by visibility"
             clearable
           />
 
@@ -255,10 +255,10 @@ onMounted(() => {
           <USelect 
             v-model="selectedTag" 
             :items="[
-              { value: null, label: 'Todas as tags' },
+              { value: null, label: 'All tags' },
               ...tags.map(tag => ({ value: tag.id, label: tag.name }))
             ]"
-            placeholder="Filtrar por tag"
+            placeholder="Filter by tag"
             :loading="tagsLoading"
             searchable
             clearable
@@ -273,7 +273,7 @@ onMounted(() => {
       <!-- Sem resultados -->
       <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
         <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
-        Nenhuma publicação encontrada
+        No publications found
       </div>
 
       <!-- Lista -->

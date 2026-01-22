@@ -25,8 +25,8 @@ const open = computed({
 })
 
 const schema = z.object({
-  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres'),
-  scientific_area: z.string().min(3, 'A área científica é obrigatória'),
+  title: z.string().min(3, 'Title must have at least 3 characters'),
+  scientific_area: z.string().min(3, 'Scientific area is required'),
   is_visible: z.boolean()
 })
 
@@ -58,8 +58,8 @@ watch(open, (value) => {
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (!file.value) {
     toast.add({
-      title: 'Erro',
-      description: 'Por favor, faça upload de um ficheiro PDF ou ZIP',
+      title: 'Error',
+      description: 'Please upload a PDF or ZIP file',
       color: 'error'
     })
     return
@@ -67,8 +67,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
   if (!ALLOWED_TYPES.includes(file.value.type)) {
     toast.add({
-      title: 'Erro',
-      description: 'Apenas ficheiros PDF ou ZIP são permitidos',
+      title: 'Error',
+      description: 'Only PDF or ZIP files are allowed',
       color: 'error'
     })
     return
@@ -83,8 +83,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
 
     toast.add({
-      title: 'Sucesso',
-      description: `Publicação "${event.data.title}" criada com sucesso`,
+      title: 'Success',
+      description: `Publication "${event.data.title}" created successfully`,
       color: 'success'
     })
 
@@ -92,8 +92,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     open.value = false
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
-      description: error.value || 'Erro ao criar publicação',
+      title: 'Error',
+      description: error.value || 'Failed to create publication',
       color: 'error'
     })
   }
@@ -101,27 +101,27 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Nova Publicação" description="Crie uma nova publicação científica">
+  <UModal v-model:open="open" title="New Publication" description="Create a new scientific publication">
     <template #body>
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
 
 
         <UFormField label="Title" name="title">
-          <UInput v-model="state.title" class="w-full" placeholder="Ex: Modelo CNN para deteção de tumores" />
+          <UInput v-model="state.title" class="w-full" placeholder="e.g., CNN model for tumor detection" />
         </UFormField>
 
         <!-- Área Científica -->
         <UFormField label="Scientific Area" name="scientific_area">
-          <UInput v-model="state.scientific_area" class="w-full" placeholder="Ex: Data Science, Materials Science, Biologia, etc..." />
+          <UInput v-model="state.scientific_area" class="w-full" placeholder="e.g., Data Science, Materials Science, Biology" />
         </UFormField>
 
 
-        <UFormField label="Visibilidade" name="is_visible">
-          <UCheckbox v-model="state.is_visible" label="Publicação visível" />
+        <UFormField label="Visibility" name="is_visible">
+          <UCheckbox v-model="state.is_visible" label="Publication visible" />
         </UFormField>
 
        
-        <UFormField label="Ficheiro" name="file">
+        <UFormField label="File" name="file">
           <UFileUpload v-model="file" accept=".pdf,.zip" :multiple="false">
             <template #default="{ open: openFileDialog }">
               <div
@@ -136,10 +136,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 <!-- Texto -->
                 <div>
                   <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Clique ou arraste o ficheiro aqui
+                    Click or drag the file here
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    PDF ou ZIP (máx. 50MB)
+                    PDF or ZIP (max 50MB)
                   </p>
                 </div>
 
@@ -169,8 +169,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <UButton label="Cancelar" color="secondary" variant="ghost" type="button" @click="open = false" />
-          <UButton label="Criar" color="primary" type="submit" :loading="loading" />
+          <UButton label="Cancel" color="secondary" variant="ghost" type="button" @click="open = false" />
+          <UButton label="Create" color="primary" type="submit" :loading="loading" />
         </div>
       </UForm>
     </template>

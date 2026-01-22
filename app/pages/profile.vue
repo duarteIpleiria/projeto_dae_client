@@ -15,10 +15,9 @@ const { user } = storeToRefs(authStore)
 const { updateProfile, forgotPassword, changePassword, loading } = useUser()
 const toast = useToast()
 
-// ===== FORMULÁRIO DE EDIÇÃO DE PERFIL =====
 const profileSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido')
+  name: z.string().min(2, 'Name must have at least 2 characters'),
+  email: z.string().email('Invalid email')
 })
 
 type ProfileSchema = z.output<typeof profileSchema>
@@ -28,7 +27,7 @@ const profileState = reactive<ProfileSchema>({
   email: user.value?.email || ''
 })
 
-// Atualizar state quando user mudar
+// Keep state in sync when user changes
 watch(user, (newUser) => {
   if (newUser) {
     profileState.name = newUser.name || ''
@@ -43,7 +42,7 @@ const handleUpdateProfile = async (event: FormSubmitEvent<ProfileSchema>) => {
       email: event.data.email
     })
 
-    // Atualizar user no store
+    // Update user in the store
     const updatedUser = {
       ...user.value,
       name: response.name,
@@ -51,32 +50,32 @@ const handleUpdateProfile = async (event: FormSubmitEvent<ProfileSchema>) => {
     }
     authStore.setUser(updatedUser)
     
-    // Guardar no localStorage também
+    // Persist to localStorage too
     if (typeof window !== 'undefined') {
       localStorage.setItem('user_info', JSON.stringify(updatedUser))
     }
 
     toast.add({
-      title: 'Sucesso',
-      description: 'Perfil atualizado com sucesso',
+      title: 'Success',
+      description: 'Profile updated successfully',
       color: 'success'
     })
   } catch (e) {
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao atualizar perfil',
+      title: 'Error',
+      description: 'Failed to update profile',
       color: 'error'
     })
   }
 }
 
-// ===== FORMULÁRIO DE ALTERAÇÃO DE Palavra-passe =====
+// ===== CHANGE PASSWORD FORM =====
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, 'Palavra-passe atual é obrigatória'),
-  newPassword: z.string().min(6, 'Nova Palavra-passe deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string().min(6, 'Confirmação deve ter pelo menos 6 caracteres')
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(6, 'New password must have at least 6 characters'),
+  confirmPassword: z.string().min(6, 'Confirmation must have at least 6 characters')
 }).refine(data => data.newPassword === data.confirmPassword, {
-  message: 'Palavra-passes não coincidem',
+  message: 'Passwords do not match',
   path: ['confirmPassword']
 })
 
@@ -96,8 +95,8 @@ const handleChangePassword = async (event: FormSubmitEvent<PasswordSchema>) => {
     })
 
     toast.add({
-      title: 'Sucesso',
-      description: response?.message || 'Palavra-passe alterada com sucesso',
+      title: 'Success',
+      description: response?.message || 'Password changed successfully',
       color: 'success'
     })
 
@@ -107,22 +106,22 @@ const handleChangePassword = async (event: FormSubmitEvent<PasswordSchema>) => {
     passwordState.confirmPassword = ''
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
-      description: e?.data?.message || 'Erro ao alterar Palavra-passe',
+      title: 'Error',
+      description: e?.data?.message || 'Failed to change password',
       color: 'error'
     })
   }
 }
 
-// ===== RECUPERAR PASSWORD =====
+// ===== PASSWORD RECOVERY =====
 const showPasswordRecovery = ref(false)
 const recoveryEmail = ref(user.value?.email || '')
 
 const handleForgotPassword = async () => {
   if (!recoveryEmail.value) {
     toast.add({
-      title: 'Erro',
-      description: 'Digite um email válido',
+      title: 'Error',
+      description: 'Enter a valid email',
       color: 'error'
     })
     return
@@ -132,16 +131,16 @@ const handleForgotPassword = async () => {
     await forgotPassword(recoveryEmail.value)
 
     toast.add({
-      title: 'Email enviado',
-      description: 'Verifique sua caixa de entrada para redefinir a Palavra-passe',
+      title: 'Email sent',
+      description: 'Check your inbox to reset your password',
       color: 'success'
     })
 
     showPasswordRecovery.value = false
   } catch (e) {
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao enviar email de recuperação',
+      title: 'Error',
+      description: 'Failed to send recovery email',
       color: 'error'
     })
   }
@@ -151,7 +150,7 @@ const handleForgotPassword = async () => {
 <template>
   <UDashboardPanel id="profile">
     <template #header>
-      <UDashboardNavbar title="Perfil">
+      <UDashboardNavbar title="Profile">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -160,20 +159,20 @@ const handleForgotPassword = async () => {
 
     <template #body>
       <div class="max-w-2xl space-y-6">
-        <!-- Editar Perfil -->
+        <!-- Edit Profile -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-user" />
-              <h3 class="font-semibold">Informações do Perfil</h3>
+              <h3 class="font-semibold">Profile Information</h3>
             </div>
           </template>
 
           <UForm :schema="profileSchema" :state="profileState" @submit="handleUpdateProfile" class="space-y-4">
-            <UFormField label="Nome" name="name">
+            <UFormField label="Name" name="name">
               <UInput
                 v-model="profileState.name"
-                placeholder="Seu nome"
+                placeholder="Your name"
                 icon="i-lucide-user"
               />
             </UFormField>
@@ -182,7 +181,7 @@ const handleForgotPassword = async () => {
               <UInput
                 v-model="profileState.email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder="you@email.com"
                 icon="i-lucide-mail"
               />
             </UFormField>
@@ -193,24 +192,24 @@ const handleForgotPassword = async () => {
                 :loading="loading"
                 color="primary"
               >
-                Salvar Alterações
+                Save Changes
               </UButton>
             </div>
           </UForm>
         </UCard>
 
-        <!-- Recuperar Palavra-passe -->
+        <!-- Password Recovery -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-lock" />
-              <h3 class="font-semibold">Segurança</h3>
+              <h3 class="font-semibold">Security</h3>
             </div>
           </template>
 
           <div class="space-y-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Esqueceu sua Palavra-passe? Enviaremos um email com instruções para redefinição.
+              Forgot your password? We will send an email with reset instructions.
             </p>
 
             <div v-if="!showPasswordRecovery">
@@ -220,16 +219,16 @@ const handleForgotPassword = async () => {
                 variant="outline"
                 icon="i-lucide-mail"
               >
-                Recuperar Palavra-passe
+                Recover Password
               </UButton>
             </div>
 
             <div v-else class="space-y-3">
-              <UFormField label="Email para recuperação" name="email">
+              <UFormField label="Recovery email" name="email">
                 <UInput
                   v-model="recoveryEmail"
                   type="email"
-                  placeholder="seu@email.com"
+                  placeholder="you@email.com"
                   icon="i-lucide-mail"
                 />
               </UFormField>
@@ -240,53 +239,53 @@ const handleForgotPassword = async () => {
                   :loading="loading"
                   color="primary"
                 >
-                  Enviar Email
+                  Send Email
                 </UButton>
                 <UButton
                   @click="showPasswordRecovery = false"
                   color="gray"
                   variant="ghost"
                 >
-                  Cancelar
+                  Cancel
                 </UButton>
               </div>
             </div>
           </div>
         </UCard>
 
-        <!-- Alterar Palavra-passe -->
+        <!-- Change Password -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-lock" />
-              <h3 class="font-semibold">Alterar Palavra-passe</h3>
+              <h3 class="font-semibold">Change Password</h3>
             </div>
           </template>
 
           <UForm :schema="passwordSchema" :state="passwordState" @submit="handleChangePassword" class="space-y-4">
-            <UFormField label="Palavra-passe Atual" name="currentPassword">
+            <UFormField label="Current Password" name="currentPassword">
               <UInput
                 v-model="passwordState.currentPassword"
                 type="password"
-                placeholder="Digite sua Palavra-passe atual"
+                placeholder="Enter your current password"
                 icon="i-lucide-lock"
               />
             </UFormField>
 
-            <UFormField label="Nova Palavra-passe" name="newPassword">
+            <UFormField label="New Password" name="newPassword">
               <UInput
                 v-model="passwordState.newPassword"
                 type="password"
-                placeholder="Digite a nova Palavra-passe"
+                placeholder="Enter your new password"
                 icon="i-lucide-lock"
               />
             </UFormField>
 
-            <UFormField label="Confirmar Nova Palavra-passe" name="confirmPassword">
+            <UFormField label="Confirm New Password" name="confirmPassword">
               <UInput
                 v-model="passwordState.confirmPassword"
                 type="password"
-                placeholder="Confirme a nova Palavra-passe"
+                placeholder="Confirm the new password"
                 icon="i-lucide-lock"
               />
             </UFormField>
@@ -297,28 +296,28 @@ const handleForgotPassword = async () => {
                 :loading="loading"
                 color="primary"
               >
-                Alterar Palavra-passe
+                Change Password
               </UButton>
             </div>
           </UForm>
         </UCard>
 
-        <!-- Informações da Conta -->
+        <!-- Account Information -->
         <UCard>
           <template #header>
             <div class="flex items-center gap-2">
               <UIcon name="i-lucide-info" />
-              <h3 class="font-semibold">Informações da Conta</h3>
+              <h3 class="font-semibold">Account Information</h3>
             </div>
           </template>
 
           <div class="space-y-3 text-sm">
             <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">ID do usuário:</span>
+              <span class="text-gray-600 dark:text-gray-400">User ID:</span>
               <span class="font-medium">{{ user?.id || 'N/A' }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">Papel:</span>
+              <span class="text-gray-600 dark:text-gray-400">Role:</span>
               <UBadge color="blue" variant="subtle">{{ user?.role || 'N/A' }}</UBadge>
             </div>
           </div>

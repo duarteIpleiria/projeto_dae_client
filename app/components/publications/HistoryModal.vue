@@ -41,49 +41,49 @@ const api = config.public.apiBase
 const authStore = useAuthStore()
 const token = authStore.token
 
-// Formatar mensagem de histórico em português natural
+// Format history message in natural English
 const formatHistoryMessage = (changes: any): string => {
   if (!changes || typeof changes !== 'object') return ''
 
   const entries = Object.entries(changes)
-  if (entries.length === 0) return 'Sem alterações detalhadas'
+  if (entries.length === 0) return 'No detailed changes'
 
   const messages: string[] = []
 
   for (const [field, value] of entries) {
     if (field === 'created' || field === 'creation') {
-      messages.push('📝 Publicação criada')
+      messages.push('📝 Publication created')
       continue
     }
 
     if (field === 'title') {
       const val = extractSimpleValue(value)
-      messages.push(`📌 Título alterado para "${val}"`)
+      messages.push(`📌 Title changed to "${val}"`)
       continue
     }
 
     if (field === 'summary') {
-      messages.push('📄 Resumo atualizado')
+      messages.push('📄 Summary updated')
       continue
     }
 
     if (field === 'scientificArea' || field === 'scientific_area') {
       const val = extractSimpleValue(value)
-      messages.push(`🔬 Área científica alterada para "${val}"`)
+      messages.push(`🔬 Scientific area changed to "${val}"`)
       continue
     }
 
     if (field === 'visible' || field === 'visibility' || field === 'isVisible' || field === 'is_visible') {
       const val = extractSimpleValue(value)
-      const isVisible = val === 'true' || val === 'Sim' || val === 'TRUE'
-      messages.push(isVisible ? '👁️ Publicação tornada visível' : '🔒 Publicação ocultada')
+      const isVisible = val === 'true' || val === 'Yes' || val === 'TRUE'
+      messages.push(isVisible ? '👁️ Publication set to visible' : '🔒 Publication hidden')
       continue
     }
 
     if (field === 'tags') {
       if (Array.isArray(value)) {
         const tagNames = value.map((t: any) => t?.name?.string || t?.name || String(t)).join(', ')
-        messages.push(`🏷️ Tags atualizadas: ${tagNames}`)
+        messages.push(`🏷️ Tags updated: ${tagNames}`)
       } else {
         const val = extractSimpleValue(value)
         messages.push(`🏷️ Tags: ${val}`)
@@ -123,8 +123,8 @@ const extractSimpleValue = (obj: any): string => {
   if (typeof obj === 'string') return obj
   if (obj.string) return obj.string
   if (obj.chars) return obj.chars
-  if (obj.valueType === 'TRUE') return 'Sim'
-  if (obj.valueType === 'FALSE') return 'Não'
+  if (obj.valueType === 'TRUE') return 'Yes'
+  if (obj.valueType === 'FALSE') return 'No'
   if (obj.value !== undefined) return String(obj.value)
   if (Array.isArray(obj)) return obj.map(extractSimpleValue).join(', ')
   return JSON.stringify(obj)
@@ -134,7 +134,7 @@ const extractSimpleValue = (obj: any): string => {
 const loadHistory = async () => {
   try {
     loading.value = true
-    console.log(`Carregando histórico da publicação ${props.publicationId}...`, {
+    console.log(`Loading publication history ${props.publicationId}...`, {
       page: currentPage.value,
       limit: itemsPerPage.value
     })
@@ -150,7 +150,7 @@ const loadHistory = async () => {
       }
     }) as any
 
-    console.log('Histórico recebido:', response)
+    console.log('History received:', response)
 
     const normalizeChanges = (changes: any): Array<{ field: string; value: string }> => {
       if (!changes || typeof changes !== 'object') return []
@@ -171,8 +171,8 @@ const loadHistory = async () => {
 
         // Objetos com valueType / chars / string
         if (raw && typeof raw === 'object') {
-          if (raw.valueType === 'TRUE') return { field, value: 'Visível: Sim' }
-          if (raw.valueType === 'FALSE') return { field, value: 'Visível: Não' }
+          if (raw.valueType === 'TRUE') return { field, value: 'Visible: Yes' }
+          if (raw.valueType === 'FALSE') return { field, value: 'Visible: No' }
           if (raw.string) return { field, value: String(raw.string) }
           if (raw.chars) return { field, value: String(raw.chars) }
           if (raw.valueType === 'NUMBER' && raw.integral && raw.value !== undefined) return { field, value: String(raw.value) }
@@ -189,8 +189,8 @@ const loadHistory = async () => {
       if (typeof obj === 'string') return obj
       if (obj.string) return obj.string
       if (obj.chars) return obj.chars
-      if (obj.valueType === 'TRUE') return 'Sim'
-      if (obj.valueType === 'FALSE') return 'Não'
+      if (obj.valueType === 'TRUE') return 'Yes'
+      if (obj.valueType === 'FALSE') return 'No'
       if (obj.value !== undefined) return String(obj.value)
       return JSON.stringify(obj)
     }
@@ -265,15 +265,15 @@ watch(() => props.modelValue, (newValue) => {
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">Histórico de Edições</h3>
+                    <h3 class="text-lg font-semibold">Edit History</h3>
           <UButton 
             color="neutral" 
-            variant="ghost" 
+      console.log(`✅ ${history.value.length} history entries loaded`)
             icon="i-lucide-x" 
-            @click="isOpen = false"
+      console.error('Error loading history:', error)
             size="sm"
-          />
-        </div>
+        title: 'Error',
+        description: error?.data?.message || 'Failed to load edit history',
       </template>
 
       <!-- Loading -->
@@ -284,8 +284,8 @@ watch(() => props.modelValue, (newValue) => {
       <!-- Sem histórico -->
       <div v-else-if="history.length === 0" class="text-center py-12 text-gray-500">
         <UIcon name="i-lucide-history" class="mx-auto text-5xl mb-4" />
-        <p class="text-lg font-medium">Nenhuma edição encontrada</p>
-        <p class="text-sm mt-2">Esta publicação ainda não foi editada</p>
+          <p class="text-lg font-medium">No edits found</p>
+                <p class="text-sm mt-2">This publication has not been edited yet</p>
       </div>
 
       <!-- Lista de edições -->
@@ -302,7 +302,7 @@ watch(() => props.modelValue, (newValue) => {
                 :color="index === 0 ? 'primary' : 'neutral'" 
                 variant="subtle"
               >
-                Versão {{ entry.version || (history.length - index) }}
+                                Version {{ entry.version || (history.length - index) }}
               </UBadge>
               <div class="flex items-center gap-2 text-sm">
                 <UIcon name="i-lucide-user" class="w-4 h-4 text-gray-500" />
@@ -320,7 +320,7 @@ watch(() => props.modelValue, (newValue) => {
           <!-- Conteúdo da versão -->
           <div class="pl-4 border-l-2 border-gray-200 dark:border-gray-700">
             <div v-if="entry.changes.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
-              Nenhuma alteração detalhada disponível
+                No detailed changes available
             </div>
             <div v-else class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-line">
               {{ formatHistoryMessage(Object.fromEntries(entry.changes.map(c => [c.field, c.value]))) }}

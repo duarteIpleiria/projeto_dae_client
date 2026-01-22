@@ -64,8 +64,8 @@ async function login() {
       authStore.setUser(response.user)
 
       toast.add({
-        title: 'Login com sucesso',
-        description: 'Bem-vindo ao dashboard',
+        title: 'Login successful',
+        description: 'Welcome to the dashboard',
         color: 'success'
       })
 
@@ -77,8 +77,8 @@ async function login() {
     loginFormData.password = ''
     
     toast.add({
-      title: 'Erro no login',
-      description: e.data?.message || 'Credenciais inválidas',
+      title: 'Login error',
+      description: e.data?.message || 'Invalid credentials',
       color: 'error'
     })
   } finally {
@@ -96,10 +96,10 @@ async function login() {
       <!-- Header -->
       <div class="mb-6 text-center">
         <h1 class="text-2xl font-bold tracking-tight">
-          Entrar no Dashboard
+          Sign in to the Dashboard
         </h1>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Introduz as tuas credenciais para continuar
+          Enter your credentials to continue
         </p>
       </div>
 
@@ -128,7 +128,7 @@ async function login() {
           @click="forgotPasswordOpen = true"
           class="text-sm text-primary hover:underline focus:outline-none focus:underline"
         >
-          Esqueceu a password?
+          Forgot your password?
         </button>
       </div>
 

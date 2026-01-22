@@ -132,8 +132,8 @@ const api = config.public.apiBase
 const token = useCookie('auth_token').value
 
 const visibilityOptions = [
-  { label: 'Visível', value: true },
-  { label: 'Oculta', value: false }
+  { label: 'Visible', value: true },
+  { label: 'Hidden', value: false }
 ]
 
 const handleVisibilityChange = () => {
@@ -172,12 +172,12 @@ const loadHistory = async (page: number = 1) => {
     totalHistoryItems.value = historyData.value.length
     currentHistoryPage.value = page
   } catch (error) {
-    console.error('Erro ao carregar histórico:', error)
+    console.error('Error loading history:', error)
     console.error('Status:', (error as any)?.status)
     console.error('Data:', (error as any)?.data)
     toast.add({
-      title: 'Erro',
-      description: 'Falha ao carregar histórico',
+      title: 'Error',
+      description: 'Failed to load history',
       color: 'error'
     })
   } finally {
@@ -187,7 +187,7 @@ const loadHistory = async (page: number = 1) => {
 
 const formatHistoryDate = (dateString: string) => {
   const date = new Date(dateString)
-  return new Intl.DateTimeFormat('pt-PT', {
+  return new Intl.DateTimeFormat('en-US', {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -197,7 +197,7 @@ const formatHistoryDate = (dateString: string) => {
 
 const formatHistoryChanges = (entry: any): string => {
   const changes = entry.changes
-  if (!changes || typeof changes !== 'object') return 'Sem alterações'
+  if (!changes || typeof changes !== 'object') return 'No changes'
 
   const messages: string[] = []
 
@@ -206,13 +206,13 @@ const formatHistoryChanges = (entry: any): string => {
     if (!obj) return ''
     if (typeof obj === 'string') return obj
     if (typeof obj === 'number') return String(obj)
-    if (typeof obj === 'boolean') return obj ? 'Sim' : 'Não'
+    if (typeof obj === 'boolean') return obj ? 'Yes' : 'No'
     
     // Objetos JSON do backend
     if (obj.string) return obj.string
     if (obj.chars) return obj.chars
-    if (obj.valueType === 'TRUE') return 'Sim'
-    if (obj.valueType === 'FALSE') return 'Não'
+    if (obj.valueType === 'TRUE') return 'Yes'
+    if (obj.valueType === 'FALSE') return 'No'
     if (obj.valueType === 'NUMBER' && obj.value !== undefined) return String(obj.value)
     
     // Arrays (tags)
@@ -245,86 +245,86 @@ const formatHistoryChanges = (entry: any): string => {
   }
 
   for (const [field, value] of Object.entries(changes)) {
-    // Criação da publicação
+    // Publication creation
     if (field === 'created' || field === 'creation') {
-      messages.push('Publicação criada')
+      messages.push('Publication created')
       continue
     }
 
-    // Título
+    // Title
     if (field === 'title') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const newVal = extractValue(value.new)
         if (newVal) {
-          messages.push(`Título: "${newVal}"`)
+          messages.push(`Title: "${newVal}"`)
         } else {
-          messages.push('Título alterado')
+          messages.push('Title updated')
         }
       } else {
         const val = extractValue(value)
         if (val) {
-          messages.push(`Título: "${val}"`)
+          messages.push(`Title: "${val}"`)
         } else {
-          messages.push('Título alterado')
+          messages.push('Title updated')
         }
       }
       continue
     }
 
-    // Resumo
+    // Summary
     if (field === 'summary') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const newVal = extractValue(value.new)
         if (newVal && newVal.length < 100) {
-          messages.push(`Resumo: ${newVal}`)
+          messages.push(`Summary: ${newVal}`)
         } else {
-          messages.push('Resumo atualizado')
+          messages.push('Summary updated')
         }
       } else {
         const val = extractValue(value)
         if (val && val.length < 100) {
-          messages.push(`Resumo: ${val}`)
+          messages.push(`Summary: ${val}`)
         } else {
-          messages.push('Resumo atualizado')
+          messages.push('Summary updated')
         }
       }
       continue
     }
 
-    // Área científica
+    // Scientific area
     if (field === 'scientificArea' || field === 'scientific_area') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const newVal = extractValue(value.new)
         if (newVal) {
-          messages.push(`Área científica: ${newVal}`)
+          messages.push(`Scientific area: ${newVal}`)
         } else {
-          messages.push('Área científica alterada')
+          messages.push('Scientific area updated')
         }
       } else {
         const val = extractValue(value)
         if (val) {
-          messages.push(`Área científica: ${val}`)
+          messages.push(`Scientific area: ${val}`)
         } else {
-          messages.push('Área científica alterada')
+          messages.push('Scientific area updated')
         }
       }
       continue
     }
 
-    // Visibilidade
+    // Visibility
     if (field === 'visible' || field === 'visibility' || field === 'isVisible' || field === 'is_visible') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         // Usar extractBoolean para processar o objeto {valueType: 'TRUE'/'FALSE'}
         const newVal = extractBoolean(value.new)
-        messages.push(newVal ? 'Publicação tornada visível' : 'Publicação ocultada')
+        messages.push(newVal ? 'Publication set to visible' : 'Publication hidden')
       } else {
         const val = extractValue(value).toLowerCase()
-        const isVisible = val === 'sim' || val === 'true' || val.includes('visível')
-        messages.push(isVisible ? 'Publicação tornada visível' : 'Publicação ocultada')
+        const isVisible = val === 'yes' || val === 'true' || val.includes('visible')
+        messages.push(isVisible ? 'Publication set to visible' : 'Publication hidden')
       }
       continue
     }
@@ -335,20 +335,20 @@ const formatHistoryChanges = (entry: any): string => {
       if (val) {
         messages.push(`Tags: ${val}`)
       } else {
-        messages.push('Tags atualizadas')
+        messages.push('Tags updated')
       }
       continue
     }
 
-    // Comentários
+    // Comments
     if (field === 'comment' || field === 'commentAdded') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const val = extractValue(value.new)
-        messages.push(val || 'Comentário adicionado')
+        messages.push(val || 'Comment added')
       } else {
         const val = extractValue(value)
-        messages.push(val || 'Comentário adicionado')
+        messages.push(val || 'Comment added')
       }
       continue
     }
@@ -358,23 +358,23 @@ const formatHistoryChanges = (entry: any): string => {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const val = extractValue(value.new)
-        messages.push(val || 'Avaliação recebida')
+        messages.push(val || 'Rating received')
       } else {
         const val = extractValue(value)
-        messages.push(val || 'Avaliação recebida')
+        messages.push(val || 'Rating received')
       }
       continue
     }
 
-    // Visibilidade de comentários
+    // Comment visibility
     if (field === 'commentVisibility') {
       // Verificar se tem estrutura old/new
       if (value && typeof value === 'object' && 'old' in value && 'new' in value) {
         const val = extractValue(value.new)
-        messages.push(val || 'Visibilidade de comentário alterada')
+        messages.push(val || 'Comment visibility changed')
       } else {
         const val = extractValue(value)
-        messages.push(val || 'Visibilidade de comentário alterada')
+        messages.push(val || 'Comment visibility changed')
       }
       continue
     }
@@ -383,9 +383,9 @@ const formatHistoryChanges = (entry: any): string => {
     if (field === 'file' || field === 'fileName') {
       const val = extractValue(value)
       if (val && val !== '[object Object]') {
-        messages.push(`Arquivo: ${val}`)
+        messages.push(`File: ${val}`)
       } else {
-        messages.push('Arquivo anexado')
+        messages.push('File attached')
       }
       continue
     }
@@ -397,15 +397,15 @@ const formatHistoryChanges = (entry: any): string => {
     }
   }
 
-  return messages.length > 0 ? messages.join('\n') : 'Alterações realizadas'
+  return messages.length > 0 ? messages.join('\n') : 'Changes made'
 }
 
 // ===== COMENTÁRIOS =====
 const submitComment = async () => {
   if (!newComment.value.trim()) {
     toast.add({
-      title: 'Erro',
-      description: 'Comentário não pode estar vazio',
+      title: 'Error',
+      description: 'Comment cannot be empty',
       color: 'error'
     })
     return
@@ -433,8 +433,8 @@ const submitComment = async () => {
     console.log('[COMMENT POST] Resposta do backend:', response)
     newComment.value = ''
     toast.add({
-      title: 'Sucesso',
-      description: 'Comentário adicionado com sucesso',
+      title: 'Success',
+      description: 'Comment added successfully',
       color: 'success'
     })
     
@@ -446,10 +446,10 @@ const submitComment = async () => {
       loadHistory()
     }
   } catch (error) {
-    console.error('Erro ao adicionar comentário:', error)
+    console.error('Error adding comment:', error)
     toast.add({
-      title: 'Erro',
-      description: 'Falha ao adicionar comentário',
+      title: 'Error',
+      description: 'Failed to add comment',
       color: 'error'
     })
   } finally {
@@ -493,15 +493,15 @@ const toggleCommentVisibility = async (commentId: number, currentVisibility: boo
     }
 
     toast.add({
-      title: 'Sucesso',
-      description: currentVisibility ? 'Comentário ocultado' : 'Comentário visível',
+      title: 'Success',
+      description: currentVisibility ? 'Comment hidden' : 'Comment visible',
       color: 'success'
     })
   } catch (error) {
-    console.error('Erro ao alterar visibilidade do comentário:', error)
+    console.error('Error changing comment visibility:', error)
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao alterar visibilidade do comentário',
+      title: 'Error',
+      description: 'Failed to change comment visibility',
       color: 'error'
     })
   } finally {
@@ -513,8 +513,8 @@ const toggleCommentVisibility = async (commentId: number, currentVisibility: boo
 const toggleAllCommentsVisibility = async () => {
   if (!props.publication.comments || props.publication.comments.length === 0) {
     toast.add({
-      title: 'Aviso',
-      description: 'Não há comentários nesta publicação',
+      title: 'Warning',
+      description: 'There are no comments on this publication',
       color: 'warning'
     })
     return
@@ -546,24 +546,24 @@ const toggleAllCommentsVisibility = async () => {
     }
 
     toast.add({
-      title: 'Sucesso',
-      description: response.message || (newVisibility ? 'Comentários visíveis' : 'Comentários ocultados'),
+      title: 'Success',
+      description: response.message || (newVisibility ? 'Comments visible' : 'Comments hidden'),
       color: 'success'
     })
   } catch (error: any) {
-    console.error('Erro ao alterar visibilidade dos comentários:', error)
+    console.error('Error changing comments visibility:', error)
     
-    let errorMessage = 'Falha ao alterar visibilidade dos comentários'
+    let errorMessage = 'Failed to change comments visibility'
     if (error.status === 403) {
-      errorMessage = 'Não tem permissão para alterar a visibilidade dos comentários'
+      errorMessage = 'You do not have permission to change comment visibility'
     } else if (error.status === 404) {
-      errorMessage = 'Publicação não encontrada'
+      errorMessage = 'Publication not found'
     } else if (error.data?.message) {
       errorMessage = error.data.message
     }
     
     toast.add({
-      title: 'Erro',
+      title: 'Error',
       description: errorMessage,
       color: 'error'
     })
@@ -612,11 +612,11 @@ const visibilityBadgeColor = computed(() => {
 })
 
 const visibilityBadgeLabel = computed(() => {
-  return getIsVisible.value ? 'Visível' : 'Oculta'
+  return getIsVisible.value ? 'Visible' : 'Hidden'
 })
 
 const visibilityLabel = computed(() => {
-  return visibilityState.value ? 'Visível' : 'Oculta'
+  return visibilityState.value ? 'Visible' : 'Hidden'
 })
 
 // Inicializar visibilityState após getIsVisible estar definido
@@ -700,7 +700,7 @@ const hasFile = computed(() => {
 <template>
   <UCard class="hover:shadow-md transition-shadow">
     <div class="space-y-4">
-      <!-- Cabeçalho com título e badges -->
+      <!-- Header with title and badges -->
       <div class="flex items-start justify-between gap-4">
         <div class="flex-1 min-w-0">
           <h3 class="text-lg font-semibold truncate text-gray-900 dark:text-white">
@@ -721,12 +721,12 @@ const hasFile = computed(() => {
         </div>
       </div>
 
-      <!-- Resumo -->
+      <!-- Summary -->
       <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
         {{ publication.summary }}
       </p>
 
-      <!-- Autor e Data -->
+      <!-- Author and Date -->
       <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         <UIcon name="i-lucide-user" class="w-4 h-4" />
         <span>{{ publication.author.name }}</span>
@@ -743,7 +743,7 @@ const hasFile = computed(() => {
         </UBadge>
       </div>
 
-      <!-- Ratings e Comentários -->
+      <!-- Ratings and Comments -->
       <div class="flex items-center gap-4 text-sm">
         <div class="flex items-center gap-1">
           <UIcon name="i-lucide-star" class="w-4 h-4 text-yellow-500" />
@@ -756,15 +756,15 @@ const hasFile = computed(() => {
         </div>
       </div>
 
-      <!-- Ações -->
+      <!-- Actions -->
       <div class="flex items-center gap-2 pt-4">
-        <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Editar"
+        <UButton v-if="isAuthor" color="secondary" variant="ghost" size="sm" icon="i-lucide-pencil" label="Edit"
           @click="$emit('edit-summary', publication)" />
 
         <UButton v-if="props.showHistory && canViewHistory"
           color="secondary" variant="ghost" size="sm"
           :icon="showHistoryDropdown ? 'i-lucide-chevron-up' : 'i-lucide-history'" 
-          :label="showHistoryDropdown ? 'Ocultar Histórico' : 'Histórico'"
+          :label="showHistoryDropdown ? 'Hide History' : 'History'"
           @click="toggleHistory" />
 
         <UButton v-if="authStore.user" color="secondary" variant="ghost" size="sm" icon="i-lucide-tags" label="Manage Tags"
@@ -774,27 +774,27 @@ const hasFile = computed(() => {
           :loading="downloadingFile"
           @click="downloadFile" />
 
-        <UButton v-if="!isAuthor && authStore.user" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Avaliar"
+        <UButton v-if="!isAuthor && authStore.user" color="secondary" variant="ghost" size="sm" icon="i-lucide-star" label="Rate"
           @click="$emit('rate', publication)" />
 
         <UButton v-if="!isAuthor && authStore.user" 
           color="secondary" variant="ghost" size="sm" 
           icon="i-lucide-message-circle"
-          label="Comentar"
+          label="Comment"
           @click="showComments = true" />
 
         <UButton v-if="visibleComments.length > 0" 
           color="secondary" variant="ghost" size="sm" 
           :icon="showComments ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-          :label="`Comentários (${visibleComments.length})`"
+          :label="`Comments (${visibleComments.length})`"
           @click="showComments = !showComments" />
       </div>
 
-      <!-- Pré-visualização de Comentários (mostrar sempre se existirem) -->
+      <!-- Comment preview (when comments exist) -->
       <div v-if="visibleComments.length > 0 && !showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3">
         <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <UIcon name="i-lucide-message-circle" class="w-4 h-4" />
-          Comentários ({{ visibleComments.length }})
+          Comments ({{ visibleComments.length }})
         </h4>
         
         <!-- Mostrar apenas os últimos 2 comentários -->
@@ -810,7 +810,7 @@ const hasFile = computed(() => {
                     </span>
                   </div>
                   <span class="text-xs font-semibold text-gray-900 dark:text-white">
-                    {{ comment.author?.name || 'Utilizador' }}
+                    {{ comment.author?.name || 'User' }}
                   </span>
                 </div>
               </div>
@@ -822,20 +822,20 @@ const hasFile = computed(() => {
           </div>
         </div>
 
-        <!-- Botão para Ver Todos -->
+        <!-- Button to view all -->
         <UButton 
           v-if="publication.comments.length > 2"
           color="secondary" 
           variant="ghost" 
           size="xs"
           icon="i-lucide-arrow-down"
-          label="Ver todos os comentários"
+          label="View all comments"
           @click="showComments = true"
           class="w-full"
         />
       </div>
 
-      <!-- Comentários -->
+      <!-- Comments -->
       <div v-if="showComments" class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">
         <!-- Lista de Comentários -->
         <div v-if="visibleComments.length > 0" class="space-y-3">
@@ -843,7 +843,7 @@ const hasFile = computed(() => {
           <div class="flex items-center justify-between">
             <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <UIcon name="i-lucide-message-circle" class="w-4 h-4" />
-              Comentários ({{ visibleComments.length }})
+              Comments ({{ visibleComments.length }})
             </h4>
             
             <!-- Toggle All Comments Button (Only for Admin/Responsavel) -->
@@ -856,7 +856,7 @@ const hasFile = computed(() => {
               :loading="togglingAllComments"
               @click="toggleAllCommentsVisibility"
             >
-              {{ commentsVisibilityState ? 'Ocultar Todos' : 'Mostrar Todos' }}
+              {{ commentsVisibilityState ? 'Hide All' : 'Show All' }}
             </UButton>
           </div>
           
@@ -899,16 +899,16 @@ const hasFile = computed(() => {
           </div>
         </div>
 
-        <!-- Formulário para Adicionar Comentário (apenas para usuários autenticados) -->
+        <!-- Form for adding comments (authenticated users only) -->
         <div v-if="authStore.user" class="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
           <h4 class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <UIcon name="i-lucide-edit" class="w-4 h-4" />
-            Deixe seu Comentário
+            Leave a Comment
           </h4>
           <div class="space-y-2">
             <UTextarea 
               v-model="newComment"
-              placeholder="Escreva seu comentário..."
+              placeholder="Write your comment..."
               :disabled="commentLoading"
               :rows="3"
               class="w-full"
@@ -921,7 +921,7 @@ const hasFile = computed(() => {
                 @click="showComments = false"
                 :disabled="commentLoading"
               >
-                Cancelar
+                Cancel
               </UButton>
               <UButton 
                 color="primary"
@@ -931,21 +931,21 @@ const hasFile = computed(() => {
                 @click="submitComment"
                 icon="i-lucide-send"
               >
-                Enviar
+                Submit
               </UButton>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Botão para Abrir Comentários (quando não há comentários) -->
+      <!-- Button to open comments when there are none -->
       <div v-if="!isAuthor && !showComments && publication.comments?.length === 0" class="border-t border-gray-200 dark:border-gray-700 pt-4">
         <UButton 
           color="secondary" 
           variant="ghost" 
           size="sm" 
           icon="i-lucide-message-circle"
-          label="Ver Comentários"
+          label="View Comments"
           @click="showComments = true"
         />
       </div>
@@ -958,11 +958,11 @@ const hasFile = computed(() => {
       @tags-updated="handleTagsUpdated"
     />
 
-    <!-- Histórico Dropdown -->
+    <!-- History dropdown -->
     <div v-if="props.showHistory && showHistoryDropdown" class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
       <div class="flex items-center justify-between mb-3">
         <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Histórico de Atividade ({{ historyData.length }} entradas)
+          Activity History ({{ historyData.length }} entries)
         </h4>
       </div>
 
@@ -971,13 +971,13 @@ const hasFile = computed(() => {
         <UIcon name="i-lucide-loader" class="animate-spin text-2xl text-gray-400" />
       </div>
 
-      <!-- Sem histórico -->
+      <!-- No history -->
       <div v-else-if="historyData.length === 0" class="text-center py-8 text-gray-500 text-sm">
         <UIcon name="i-lucide-history" class="mx-auto text-3xl mb-2" />
-        <p>Nenhuma atividade registrada</p>
+        <p>No activity recorded</p>
       </div>
 
-      <!-- Lista de histórico -->
+      <!-- History list -->
       <div v-else class="space-y-3">
         <div 
           v-for="(entry, index) in historyData" 
@@ -994,7 +994,7 @@ const hasFile = computed(() => {
                 v{{ entry.version || (totalHistoryItems - ((currentHistoryPage - 1) * historyItemsPerPage) - index) }}
               </UBadge>
               <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
-                {{ entry.edited_by?.name || entry.editedBy?.name || 'Desconhecido' }}
+                {{ entry.edited_by?.name || entry.editedBy?.name || 'Unknown' }}
               </span>
             </div>
             <span class="text-xs text-gray-500">
@@ -1006,7 +1006,7 @@ const hasFile = computed(() => {
           </p>
         </div>
 
-        <!-- Paginação -->
+        <!-- Pagination -->
         <div v-if="totalHistoryItems > historyItemsPerPage" class="flex justify-center pt-2">
           <UPagination 
             :model-value="currentHistoryPage"

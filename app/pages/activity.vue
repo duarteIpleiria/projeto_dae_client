@@ -21,7 +21,7 @@ const totalPagesComputed = computed(() => {
   return Math.ceil(totalActivities.value / itemsPerPage.value)
 })
 
-// Ícone e cor por tipo de atividade
+// Icon and color by activity type
 const getActivityIcon = (type: string) => {
   switch (type) {
     case 'upload':
@@ -118,54 +118,54 @@ const getActivityLabel = (type: string) => {
     case 'upload':
       return 'Upload'
     case 'edit':
-      return 'Edição'
+      return 'Edit'
     case 'tag':
     case 'tag_creation':
       return 'Tag'
     case 'delete':
-      return 'Eliminação'
+      return 'Deletion'
     case 'comment':
-      return 'Comentário'
+      return 'Comment'
     case 'rating':
-      return 'Avaliação'
+      return 'Rating'
     case 'SUBSCRIBE_TAG':
-      return 'Subscrição de Tag'
+      return 'Tag Subscription'
     case 'UNSUBSCRIBE_TAG':
-      return 'Cancelamento de Tag'
+      return 'Tag Unsubscription'
     case 'CREATE_TAG':
-      return 'Criação de Tag'
+      return 'Tag Creation'
     case 'DELETE_TAG':
-      return 'Eliminação de Tag'
+      return 'Tag Deletion'
     case 'HIDE_TAG':
-      return 'Ocultação de Tag'
+      return 'Tag Hidden'
     case 'SHOW_TAG':
-      return 'Exibição de Tag'
+      return 'Tag Shown'
     case 'ASSOCIATE_TAG':
-      return 'Associação de Tag'
+      return 'Tag Associated'
     case 'DISSOCIATE_TAG':
-      return 'Remoção de Tag'
+      return 'Tag Removed'
     case 'UPDATE_NAME':
-      return 'Atualização de Nome'
+      return 'Name Updated'
     case 'UPDATE_EMAIL':
-      return 'Atualização de Email'
+      return 'Email Updated'
     case 'UPDATE_PASSWORD':
-      return 'Atualização de Password'
+      return 'Password Updated'
     case 'PASSWORD_RESET_REQUEST':
-      return 'Reset de Password'
+      return 'Password Reset Request'
     case 'CREATE_USER':
-      return 'Criação de Utilizador'
+      return 'User Created'
     case 'EDIT_USER':
-      return 'Edição de Utilizador'
+      return 'User Edited'
     case 'DELETE_USER':
-      return 'Eliminação de Utilizador'
+      return 'User Deleted'
     case 'ACTIVATE_USER':
-      return 'Ativação de Utilizador'
+      return 'User Activated'
     case 'DEACTIVATE_USER':
-      return 'Desativação de Utilizador'
+      return 'User Deactivated'
     case 'CHANGE_USER_ROLE':
-      return 'Alteração de Role'
+      return 'Role Changed'
     default:
-      return 'Atividade'
+      return 'Activity'
   }
 }
 
@@ -177,7 +177,7 @@ const loadActivities = async () => {
     const api = config.public.apiBase
     const token = authStore.token
 
-    console.log('Carregando histórico de atividades...', {
+    console.log('Loading activity history...', {
       page: currentPage.value,
       limit: itemsPerPage.value
     })
@@ -193,18 +193,18 @@ const loadActivities = async () => {
       }
     }) as any
 
-    console.log('Resposta do histórico:', response)
+    console.log('Activity history response:', response)
 
     activities.value = response?.activities || []
     totalActivities.value = response?.total_activities || 0
     totalPages.value = response?.total_pages || 0
 
-    console.log(`✅ ${activities.value.length} atividades carregadas`)
+    console.log(`✅ ${activities.value.length} activities loaded`)
   } catch (error: any) {
-    console.error('Erro ao carregar atividades:', error)
+    console.error('Error loading activities:', error)
     toast.add({
-      title: 'Erro',
-      description: error?.data?.message || 'Falha ao carregar histórico de atividades',
+      title: 'Error',
+      description: error?.data?.message || 'Failed to load activity history',
       color: 'error'
     })
   } finally {
@@ -233,7 +233,7 @@ const formatDate = (dateString: string) => {
 
 // Inicializar
 onMounted(() => {
-  console.log('Componente Activity montado, carregando histórico...')
+  console.log('Activity component mounted, loading history...')
   loadActivities()
 })
 </script>

@@ -39,16 +39,16 @@ const open = computed({
 const selectedRating = ref(0)
 const hoveredRating = ref(0)
 
-// Verificar se pode avaliar
+// Check if the user can rate
 const canRate = computed(() => {
   if (!props.publication) return false
   
   const isAuthor = props.currentUserId && props.publication.author.id === props.currentUserId
   
-  // Não pode avaliar a própria publicação (independente de visibilidade)
+  // Cannot rate own publication regardless of visibility
   if (isAuthor) return false
   
-  // Pode avaliar publicações visíveis E publicações ocultas de outros users
+  // Can rate visible publications and hidden ones from other users
   return true
 })
 
@@ -58,7 +58,7 @@ const errorMessage = computed(() => {
   const isAuthor = props.currentUserId && props.publication.author.id === props.currentUserId
   
   if (isAuthor) {
-    return 'Não pode avaliar a sua própria publicação'
+    return 'You cannot rate your own publication'
   }
   
   return ''
@@ -77,8 +77,8 @@ const submitRating = async () => {
     await ratePublication(props.publication.id, selectedRating.value)
 
     toast.add({
-      title: 'Sucesso',
-      description: `Avaliação de ${selectedRating.value} estrela${selectedRating.value > 1 ? 's' : ''} atribuída`,
+      title: 'Success',
+      description: `${selectedRating.value}-star rating submitted`,
       color: 'success'
     })
 
@@ -87,8 +87,8 @@ const submitRating = async () => {
     selectedRating.value = 0
   } catch (e: any) {
     toast.add({
-      title: 'Erro',
-      description: e.data?.message || 'Erro ao atribuir avaliação',
+      title: 'Error',
+      description: e.data?.message || 'Failed to submit rating',
       color: 'error'
     })
   }
@@ -96,14 +96,14 @@ const submitRating = async () => {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Avaliar Publicação">
+  <UModal v-model:open="open" title="Rate Publication">
     <template #body>
       <div v-if="publication" class="space-y-6">
         <!-- Título da publicação -->
         <div>
           <h3 class="font-semibold text-lg">{{ publication.title }}</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Por {{ publication.author.name }}
+            By {{ publication.author.name }}
           </p>
         </div>
 
@@ -118,7 +118,7 @@ const submitRating = async () => {
         <!-- Estrelas de avaliação -->
         <div v-else class="flex flex-col items-center gap-4">
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Clique para avaliar (1 a 5 estrelas)
+            Click to rate (1 to 5 stars)
           </p>
 
           <div class="flex gap-2">
@@ -143,20 +143,20 @@ const submitRating = async () => {
           </div>
 
           <p v-if="selectedRating > 0" class="text-sm font-medium">
-            {{ selectedRating }} estrela{{ selectedRating > 1 ? 's' : '' }}
+            {{ selectedRating }} star{{ selectedRating > 1 ? 's' : '' }}
           </p>
         </div>
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
           <UButton
-            label="Cancelar"
+            label="Cancel"
             color="gray"
             variant="ghost"
             @click="open = false"
           />
           <UButton
-            label="Avaliar"
+            label="Submit Rating"
             color="primary"
             :disabled="!canRate || selectedRating === 0"
             :loading="loading"

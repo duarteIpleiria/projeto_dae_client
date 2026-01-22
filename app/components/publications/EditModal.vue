@@ -36,9 +36,9 @@ const open = computed({
 })
 
 const schema = z.object({
-  title: z.string().min(3, 'O título deve ter pelo menos 3 caracteres'),
-  scientific_area: z.string().min(3, 'A área científica é obrigatória'),
-  summary: z.string().min(3, 'O resumo deve ter pelo menos 3 caracteres'),
+  title: z.string().min(3, 'Title must have at least 3 characters'),
+  scientific_area: z.string().min(3, 'Scientific area is required'),
+  summary: z.string().min(3, 'Summary must have at least 3 characters'),
   is_visible: z.boolean()
 })
 
@@ -128,8 +128,8 @@ async function removeExistingFile() {
     existingFileUrl.value = null
 
     toast.add({
-      title: 'Sucesso',
-      description: 'Ficheiro removido com sucesso',
+      title: 'Success',
+      description: 'File removed successfully',
       color: 'success'
     })
     
@@ -138,8 +138,8 @@ async function removeExistingFile() {
   } catch (error) {
     console.error('Erro ao remover ficheiro:', error)
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao remover ficheiro',
+      title: 'Error',
+      description: 'Failed to remove file',
       color: 'error'
     })
   } finally {
@@ -167,7 +167,7 @@ async function downloadFile() {
     })
 
     if (!response.ok) {
-      throw new Error('Erro ao fazer download')
+      throw new Error('Failed to download file')
     }
 
     const blob = await response.blob()
@@ -181,15 +181,15 @@ async function downloadFile() {
     window.URL.revokeObjectURL(url)
 
     toast.add({
-      title: 'Sucesso',
-      description: 'Download iniciado',
+      title: 'Success',
+      description: 'Download started',
       color: 'success'
     })
   } catch (error) {
     console.error('Erro ao fazer download:', error)
     toast.add({
-      title: 'Erro',
-      description: 'Erro ao fazer download do ficheiro',
+      title: 'Error',
+      description: 'Failed to download the file',
       color: 'error'
     })
   } finally {
@@ -206,8 +206,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   // Validar arquivo se foi selecionado
   if (file.value && !ALLOWED_TYPES.includes(file.value.type)) {
     toast.add({
-      title: 'Erro',
-      description: 'Apenas ficheiros PDF ou ZIP são permitidos',
+      title: 'Error',
+      description: 'Only PDF or ZIP files are allowed',
       color: 'error'
     })
     return
@@ -223,8 +223,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
 
     toast.add({
-      title: 'Sucesso',
-      description: `Publicação "${event.data.title}" atualizada com sucesso`,
+      title: 'Success',
+      description: `Publication "${event.data.title}" updated successfully`,
       color: 'success'
     })
 
@@ -237,9 +237,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     console.error('❌ Erro statusCode:', e.statusCode)
     console.error('❌ Erro message:', e.message)
     
-    const errorMessage = e.data?.message || e.message || 'Erro ao atualizar publicação'
+    const errorMessage = e.data?.message || e.message || 'Failed to update publication'
     toast.add({
-      title: 'Erro',
+      title: 'Error',
       description: errorMessage,
       color: 'error'
     })
@@ -248,43 +248,43 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 </script>
 
 <template>
-  <UModal v-model:open="open" title="Editar Publicação" description="Edite os dados da publicação científica">
+  <UModal v-model:open="open" title="Edit Publication" description="Edit the scientific publication data">
     <template #body>
       <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
 
-        <!-- Título -->
-        <UFormField label="Título" name="title">
-          <UInput v-model="state.title" class="w-full" placeholder="Ex: Modelo CNN para deteção de tumores" />
+        <!-- Title -->
+        <UFormField label="Title" name="title">
+          <UInput v-model="state.title" class="w-full" placeholder="e.g., CNN model for tumor detection" />
         </UFormField>
 
-        <!-- Área Científica -->
-        <UFormField label="Área Científica" name="scientific_area">
+        <!-- Scientific Area -->
+        <UFormField label="Scientific Area" name="scientific_area">
           <UInput 
             v-model="state.scientific_area" 
             class="w-full" 
-            placeholder="Ex: Data Science, Materials Science, Biologia, etc..." 
+            placeholder="e.g., Data Science, Materials Science, Biology" 
           />
         </UFormField>
 
-        <!-- Resumo -->
-        <UFormField label="Resumo" name="summary">
-          <UTextarea v-model="state.summary" :rows="8" placeholder="Digite o resumo da publicação..." class="w-full" />
+        <!-- Summary -->
+        <UFormField label="Summary" name="summary">
+          <UTextarea v-model="state.summary" :rows="8" placeholder="Write the publication summary..." class="w-full" />
 
           <template #help>
             <span class="text-xs text-gray-400">
-              {{ state.summary.length }} caracteres
+              {{ state.summary.length }} characters
             </span>
           </template>
         </UFormField>
 
-        <!-- Visibilidade -->
-        <UFormField label="Visibilidade" name="is_visible">
-          <UCheckbox v-model="state.is_visible" label="Publicação visível" />
+        <!-- Visibility -->
+        <UFormField label="Visibility" name="is_visible">
+          <UCheckbox v-model="state.is_visible" label="Publication visible" />
         </UFormField>
 
-        <!-- Ficheiro (Opcional) -->
-        <UFormField label="Ficheiro (Opcional)" name="file">
-          <!-- Arquivo Existente -->
+        <!-- File (Optional) -->
+        <UFormField label="File (Optional)" name="file">
+          <!-- Existing File -->
           <div v-if="existingFileName && !file" 
             class="mb-3 flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 dark:bg-gray-800 dark:border-gray-700">
             <UIcon name="i-lucide-file-check" class="h-5 w-5 text-green-600" />
@@ -294,7 +294,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 {{ existingFileName }}
               </p>
               <p class="text-xs text-gray-500">
-                Ficheiro atual da publicação
+                Current publication file
               </p>
             </div>
 
@@ -319,7 +319,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             </div>
           </div>
 
-          <!-- Upload de Novo Arquivo -->
+          <!-- Upload New File -->
           <UFileUpload v-model="file" accept=".pdf,.zip" :multiple="false">
             <template #default="{ open: openFileDialog }">
               <div
@@ -334,10 +334,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 <!-- Texto -->
                 <div>
                   <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ existingFileName ? 'Clique para substituir o ficheiro' : 'Clique para adicionar ficheiro (opcional)' }}
+                    {{ existingFileName ? 'Click to replace the file' : 'Click to add a file (optional)' }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
-                    PDF ou ZIP (máx. 50MB)
+                    PDF or ZIP (max 50MB)
                   </p>
                 </div>
 
@@ -367,8 +367,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <!-- Botões -->
         <div class="flex justify-end gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <UButton label="Cancelar" color="gray" variant="ghost" type="button" @click="open = false" />
-          <UButton label="Atualizar" color="primary" type="submit" :loading="loading" />
+          <UButton label="Cancel" color="gray" variant="ghost" type="button" @click="open = false" />
+          <UButton label="Update" color="primary" type="submit" :loading="loading" />
         </div>
       </UForm>
     </template>

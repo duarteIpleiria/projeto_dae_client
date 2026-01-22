@@ -199,10 +199,10 @@ async function toggleTagVisibility(tag: Tag, visible: boolean) {
   try {
     await toggleVisibility(tag.id, visible)
 
-    const action = visible ? 'visível' : 'oculta'
+    const action = visible ? 'visible' : 'hidden'
     toast.add({
       title: `Tag ${action}`,
-      description: `A tag "${tag.name}" foi marcada como ${action}`,
+      description: `Tag "${tag.name}" marked as ${action}`,
       color: 'success',
       icon: visible ? 'i-lucide-eye' : 'i-lucide-eye-off',
       timeout: 3000
@@ -222,16 +222,16 @@ async function toggleTagVisibility(tag: Tag, visible: boolean) {
     // Check for permission error
     if (error.status === 403 || error.status === 401) {
       toast.add({
-        title: 'Sem permissão',
-        description: 'Não tem permissão para alterar a visibilidade de tags',
+        title: 'No permission',
+        description: 'You do not have permission to change tag visibility',
         color: 'error',
         icon: 'i-lucide-shield-alert',
         timeout: 5000
       })
     } else {
       toast.add({
-        title: 'Erro',
-        description: error.data?.message || 'Não foi possível alterar a visibilidade da tag',
+        title: 'Error',
+        description: error.data?.message || 'Could not change tag visibility',
         color: 'error',
         icon: 'i-lucide-alert-circle',
         timeout: 5000
@@ -270,8 +270,8 @@ async function subscribeToTag(tag: Tag) {
   // Check if already subscribed
   if (tagsStore.isSubscribed(tag.id)) {
     toast.add({
-      title: 'Já subscrito',
-      description: `Já está subscrito à tag "${tag.name}"`,
+      title: 'Already subscribed',
+      description: `You are already subscribed to tag "${tag.name}"`,
       color: 'yellow',
       icon: 'i-lucide-info',
       timeout: 3000
@@ -293,8 +293,8 @@ async function subscribeToTag(tag: Tag) {
     })
 
     toast.add({
-      title: 'Tag subscrita!',
-      description: `Subscreveu "${tag.name}" com sucesso. Receberá notificações sobre publicações relacionadas.`,
+      title: 'Tag subscribed!',
+      description: `Successfully subscribed to "${tag.name}". You will receive notifications for related publications.`,
       color: 'success',
       icon: 'i-lucide-bell-ring',
       timeout: 4000
@@ -313,8 +313,8 @@ async function subscribeToTag(tag: Tag) {
     // Check if error is "already subscribed"
     const errorMessage = typeof error.data === 'string' ? error.data : error.data?.message || ''
     const isAlreadySubscribed = errorMessage.includes('já subscrita') || 
-                                errorMessage.includes('already subscribed') ||
-                                errorMessage.includes('MyEntityConflictException')
+                  errorMessage.includes('already subscribed') ||
+                  errorMessage.includes('MyEntityConflictException')
     
     if (isAlreadySubscribed) {
       console.log('Tag already subscribed on server, keeping it subscribed locally')
@@ -325,16 +325,16 @@ async function subscribeToTag(tag: Tag) {
       await Promise.all([refresh(), refreshUser()])
       
       toast.add({
-        title: 'Já subscrito',
-        description: `Já está subscrito à tag "${tag.name}"`,
+        title: 'Already subscribed',
+        description: `You are already subscribed to tag "${tag.name}"`,
         color: 'yellow',
         icon: 'i-lucide-info',
         timeout: 3000
       })
     } else {
       toast.add({
-        title: 'Erro ao subscrever',
-        description: error.data?.message || 'Não foi possível subscrever a tag',
+        title: 'Subscription error',
+        description: error.data?.message || 'Could not subscribe to the tag',
         color: 'error',
         icon: 'i-lucide-alert-circle',
         timeout: 5000
@@ -363,8 +363,8 @@ async function unsubscribeFromTag(tag: Tag) {
     })
 
     toast.add({
-      title: 'Subscrição removida',
-      description: `Deixou de subscrever "${tag.name}"`,
+      title: 'Subscription removed',
+      description: `Unsubscribed from "${tag.name}"`,
       color: 'success',
       icon: 'i-lucide-bell-off',
       timeout: 3000
@@ -381,8 +381,8 @@ async function unsubscribeFromTag(tag: Tag) {
     }
     
     toast.add({
-      title: 'Erro ao cancelar subscrição',
-      description: error.data?.message || 'Não foi possível cancelar a subscrição',
+      title: 'Unsubscribe error',
+      description: error.data?.message || 'Could not cancel subscription',
       color: 'error',
       icon: 'i-lucide-alert-circle',
       timeout: 5000
@@ -397,7 +397,7 @@ async function unsubscribeFromTag(tag: Tag) {
 <template>
   <UDashboardPanel id="tags">
     <template #header>
-      <UDashboardNavbar title="Gestão de Tags">
+      <UDashboardNavbar title="Tag Management">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -423,7 +423,7 @@ async function unsubscribeFromTag(tag: Tag) {
           >
             <div class="flex items-center gap-2 mb-3">
               <UIcon name="i-lucide-bookmark-check" class="text-primary size-5" />
-              <h3 class="text-sm font-semibold">Tags Subscritas</h3>
+              <h3 class="text-sm font-semibold">Subscribed Tags</h3>
               <UBadge color="primary" variant="subtle" size="xs">{{ subscribedTags.length }}</UBadge>
             </div>
 
@@ -471,8 +471,8 @@ async function unsubscribeFromTag(tag: Tag) {
             <!-- Empty state for subscribed tags -->
             <div v-else class="flex flex-col items-center justify-center py-8 text-center">
               <UIcon name="i-lucide-inbox" class="size-12 text-muted mb-3" />
-              <p class="text-sm text-muted">Nenhuma tag subscrita</p>
-              <p class="text-xs text-muted mt-1">Adicione tags abaixo clicando ou arrastando para esta área</p>
+              <p class="text-sm text-muted">No subscribed tags yet</p>
+              <p class="text-xs text-muted mt-1">Add tags below by clicking or dragging them here</p>
             </div>
 
             <!-- Drop zone indicator when dragging -->
@@ -481,7 +481,7 @@ async function unsubscribeFromTag(tag: Tag) {
               class="mt-3 p-3 border-2 border-dashed border-primary-500 rounded-md bg-primary-50 dark:bg-primary-950/20 flex items-center justify-center gap-2"
             >
               <UIcon name="i-lucide-arrow-down" class="size-4 text-primary animate-bounce" />
-              <span class="text-sm text-primary font-medium">Solte para subscrever "{{ draggedTag.name }}"</span>
+              <span class="text-sm text-primary font-medium">Drop to subscribe to "{{ draggedTag.name }}"</span>
             </div>
           </div>
 
@@ -497,9 +497,9 @@ async function unsubscribeFromTag(tag: Tag) {
           >
             <div class="flex items-center gap-2 mb-3">
               <UIcon name="i-lucide-eye-off" class="text-amber-600 dark:text-amber-400 size-5" />
-              <h3 class="text-sm font-semibold">Tags Ocultas</h3>
+              <h3 class="text-sm font-semibold">Hidden Tags</h3>
               <UBadge color="amber" variant="subtle" size="xs">{{ hiddenTags.length }}</UBadge>
-              <UTooltip text="Apenas visível para Administradores e Responsáveis">
+              <UTooltip text="Visible only to Administrators and Managers">
                 <UIcon name="i-lucide-info" class="text-muted size-4" />
               </UTooltip>
             </div>
@@ -536,10 +536,10 @@ async function unsubscribeFromTag(tag: Tag) {
                   size="2xs"
                   class="absolute right-1 top-1/2 -translate-y-1/2 hover:bg-success-500 hover:text-white"
                   @click="toggleTagVisibility(tag, true)"
-                  :aria-label="`Tornar visível ${tag.name}`"
+                  :aria-label="`Make ${tag.name} visible`"
                 >
-                  <UTooltip text="Tornar visível">
-                    <span class="sr-only">Tornar visível</span>
+                  <UTooltip text="Make visible">
+                    <span class="sr-only">Make visible</span>
                   </UTooltip>
                 </UButton>
                 <UIcon 
@@ -553,8 +553,8 @@ async function unsubscribeFromTag(tag: Tag) {
             <!-- Empty state for hidden tags -->
             <div v-else class="flex flex-col items-center justify-center py-8 text-center">
               <UIcon name="i-lucide-check-circle" class="size-12 text-muted mb-3" />
-              <p class="text-sm text-muted">Nenhuma tag oculta</p>
-              <p class="text-xs text-muted mt-1">Arraste tags visíveis para aqui para as ocultar</p>
+              <p class="text-sm text-muted">No hidden tags</p>
+              <p class="text-xs text-muted mt-1">Drag visible tags here to hide them</p>
             </div>
 
             <!-- Drop zone indicator when dragging -->
@@ -563,7 +563,7 @@ async function unsubscribeFromTag(tag: Tag) {
               class="mt-3 p-3 border-2 border-dashed border-amber-500 rounded-md bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center gap-2"
             >
               <UIcon name="i-lucide-arrow-down" class="size-4 text-amber-600 dark:text-amber-400 animate-bounce" />
-              <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Solte para ocultar "{{ draggedTag.name }}"</span>
+              <span class="text-sm text-amber-600 dark:text-amber-400 font-medium">Drop to hide "{{ draggedTag.name }}"</span>
             </div>
           </div>
 
@@ -579,8 +579,8 @@ async function unsubscribeFromTag(tag: Tag) {
           >
             <div class="flex items-center gap-2 mb-3">
               <UIcon name="i-lucide-trash-2" class="text-red-600 dark:text-red-400 size-5" />
-              <h3 class="text-sm font-semibold">Eliminar Tag</h3>
-              <UTooltip text="Arraste tags para cá para as eliminar permanentemente">
+              <h3 class="text-sm font-semibold">Delete Tag</h3>
+              <UTooltip text="Drag tags here to delete permanently">
                 <UIcon name="i-lucide-info" class="text-muted size-4" />
               </UTooltip>
             </div>
@@ -605,9 +605,9 @@ async function unsubscribeFromTag(tag: Tag) {
                   ? 'text-red-600 dark:text-red-400' 
                   : 'text-gray-500 dark:text-gray-400'"
               >
-                {{ isDraggingOverTrash && draggedTag ? `Eliminar "${draggedTag.name}"` : 'Arraste aqui para eliminar' }}
+                {{ isDraggingOverTrash && draggedTag ? `Delete "${draggedTag.name}"` : 'Drag here to delete' }}
               </p>
-              <p class="text-xs text-muted mt-1">Esta ação é permanente</p>
+              <p class="text-xs text-muted mt-1">This action is permanent</p>
             </div>
           </div>
         </div>
@@ -618,13 +618,13 @@ async function unsubscribeFromTag(tag: Tag) {
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-tags" class="text-muted size-5" />
-            <h3 class="text-sm font-semibold">Tags Disponíveis</h3>
+            <h3 class="text-sm font-semibold">Available Tags</h3>
             <UBadge color="neutral" variant="subtle" size="xs">{{ unsubscribedTags.length }}</UBadge>
           </div>
           <UInput 
             v-model="searchQuery" 
             icon="i-lucide-search" 
-            placeholder="Procurar tags..." 
+            placeholder="Search tags..." 
             class="max-w-xs"
           />
         </div>
@@ -676,8 +676,8 @@ async function unsubscribeFromTag(tag: Tag) {
               @click.stop="toggleTagVisibility(tag, false)"
               :aria-label="`Ocultar ${tag.name}`"
             >
-              <UTooltip text="Ocultar tag">
-                <span class="sr-only">Ocultar tag</span>
+              <UTooltip text="Hide tag">
+                <span class="sr-only">Hide tag</span>
               </UTooltip>
             </UButton>
           </div>
@@ -686,9 +686,9 @@ async function unsubscribeFromTag(tag: Tag) {
         <!-- Empty state for filtered tags -->
         <div v-else-if="searchQuery && unsubscribedTags.length > 0" class="flex flex-col items-center justify-center py-12 text-center">
           <UIcon name="i-lucide-search-x" class="size-12 text-muted mb-3" />
-          <p class="text-sm text-muted">Nenhuma tag encontrada para "{{ searchQuery }}"</p>
+          <p class="text-sm text-muted">No tags found for "{{ searchQuery }}"</p>
           <UButton 
-            label="Limpar pesquisa" 
+            label="Clear search" 
             variant="ghost" 
             size="xs" 
             class="mt-2"
@@ -699,15 +699,15 @@ async function unsubscribeFromTag(tag: Tag) {
         <!-- Empty state when all tags are subscribed -->
         <div v-else-if="unsubscribedTags.length === 0 && tags.length > 0" class="flex flex-col items-center justify-center py-12 text-center">
           <UIcon name="i-lucide-check-circle-2" class="size-12 text-success mb-3" />
-          <p class="text-sm font-medium">Todas as tags já estão subscritas!</p>
-          <p class="text-xs text-muted mt-1">Não há mais tags disponíveis para subscrever</p>
+          <p class="text-sm font-medium">All tags are already subscribed!</p>
+          <p class="text-xs text-muted mt-1">No more tags available to subscribe</p>
         </div>
 
         <!-- Empty state when no tags exist -->
         <div v-else-if="tags.length === 0" class="flex flex-col items-center justify-center py-12 text-center">
           <UIcon name="i-lucide-inbox" class="size-12 text-muted mb-3" />
-          <p class="text-sm text-muted">Nenhuma tag disponível</p>
-          <p class="text-xs text-muted mt-1">Crie a primeira tag usando o botão acima</p>
+          <p class="text-sm text-muted">No tags available</p>
+          <p class="text-xs text-muted mt-1">Create the first tag using the button above</p>
         </div>
 
         <!-- Info panel -->
@@ -715,12 +715,12 @@ async function unsubscribeFromTag(tag: Tag) {
           <div class="flex gap-3">
             <UIcon name="i-lucide-info" class="size-5 text-primary flex-shrink-0 mt-0.5" />
             <div class="text-sm space-y-1">
-              <p class="font-medium">Como usar tags:</p>
+              <p class="font-medium">How to use tags:</p>
               <ul class="text-muted space-y-1 list-disc list-inside">
-                <li><strong>Clique</strong> numa tag disponível para a subscrever</li>
-                <li><strong>Arraste</strong> uma tag para a área de tags subscritas</li>
-                <li><strong>Passe o rato</strong> sobre uma tag subscrita para ver o botão de remover</li>
-                <li v-if="canManageVisibility"><strong>Arraste</strong> tags para a área de ocultas ou clique no ícone de olho para ocultar/mostrar</li>
+                <li><strong>Click</strong> a tag to subscribe to it</li>
+                <li><strong>Drag</strong> a tag to the subscribed area</li>
+                <li><strong>Hover</strong> over a subscribed tag to show the remove button</li>
+                <li v-if="canManageVisibility"><strong>Drag</strong> tags to the hidden area or click the eye icon to hide/show</li>
               </ul>
             </div>
           </div>
@@ -730,11 +730,11 @@ async function unsubscribeFromTag(tag: Tag) {
         <div class="flex items-center justify-between text-xs text-muted pt-4 border-t border-default">
           <div>
             Total: <strong>{{ tags.length }}</strong> tags
-            <span v-if="canManageVisibility">({{ visibleTags.length }} visíveis, {{ hiddenTags.length }} ocultas)</span>
+            <span v-if="canManageVisibility">({{ visibleTags.length }} visible, {{ hiddenTags.length }} hidden)</span>
           </div>
           <div>
-            Subscritas: <strong class="text-primary">{{ subscribedTags.length }}</strong> | 
-            Disponíveis: <strong>{{ unsubscribedTags.length }}</strong>
+            Subscribed: <strong class="text-primary">{{ subscribedTags.length }}</strong> | 
+            Available: <strong>{{ unsubscribedTags.length }}</strong>
           </div>
         </div>
       </div>

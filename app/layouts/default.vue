@@ -114,18 +114,18 @@ onMounted(async () => {
       <template #default="{ collapsed }">
         <UNavigationMenu :collapsed="collapsed" :items="links[0]" orientation="vertical" tooltip popover />
         
-        <!-- Mensagem para visitantes anônimos -->
+        <!-- Message for anonymous visitors -->
         <div v-if="!authStore.user" :class="collapsed ? 'px-2 py-3' : 'px-4 py-3'">
           <UCard :ui="{ body: 'p-3' }">
             <div class="space-y-2">
               <div class="flex items-center gap-2">
                 <UIcon name="i-lucide-info" class="w-4 h-4 text-primary-500" />
                 <p v-if="!collapsed" class="text-xs font-semibold text-gray-900 dark:text-white">
-                  Modo Visitante
+                  Guest Mode
                 </p>
               </div>
               <p v-if="!collapsed" class="text-xs text-gray-600 dark:text-gray-400">
-                Faça login para comentar, avaliar e interagir com as publicações.
+                Log in to comment, rate, and interact with publications.
               </p>
               <UButton 
                 v-if="!collapsed"
@@ -135,7 +135,7 @@ onMounted(async () => {
                 icon="i-lucide-log-in"
                 to="/login"
               >
-                Fazer Login
+                Log In
               </UButton>
             </div>
           </UCard>

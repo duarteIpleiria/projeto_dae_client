@@ -50,7 +50,7 @@ const totalPages = computed(() => {
   return Math.ceil(totalItems.value / itemsPerPage.value)
 })
 
-// ===== CARREGAR TAGS =====
+// ===== LOAD TAGS =====
 const loadTags = async () => {
   try {
     tagsLoading.value = true
@@ -58,32 +58,32 @@ const loadTags = async () => {
     const api = config.public.apiBase
     const token = authStore.token
 
-    console.log('Carregando tags de:', `${api}/tags`)
+    console.log('Loading tags from:', `${api}/tags`)
     const response = await $fetch(`${api}/tags`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
     }) as any
 
-    console.log('✅ Tags carregadas:', response)
+    console.log('✅ Tags loaded:', response)
     const allTags = (Array.isArray(response) ? response : (response?.data || []))
     
-    // Filtrar tags ocultas para TODOS os usuários (incluindo admin)
-    // Tags ocultas só devem aparecer na página de gestão de tags
+    // Filter hidden tags for all users (including admins)
+    // Hidden tags should only appear on the tag management page
     tags.value = allTags.filter((tag: any) => {
-      console.log('🏷️ Filtrando tag:', tag.name, 'visible:', tag.visible)
+      console.log('🏷️ Filtering tag:', tag.name, 'visible:', tag.visible)
       return tag.visible === true || tag.visible === undefined || tag.visible === null
     })
     
-    console.log('📋 Tags formatadas (após filtro):', tags.value)
+    console.log('📋 Tags formatted (after filter):', tags.value)
   } catch (error) {
-    console.error('❌ Erro ao carregar tags:', error)
+    console.error('❌ Error loading tags:', error)
   } finally {
     tagsLoading.value = false
   }
 }
 
-// ===== CARREGAR PUBLICAÇÕES =====
+// ===== LOAD PUBLICATIONS =====
 const loadPublications = async () => {
   if (!loading.value) {
     loading.value = true
@@ -95,7 +95,7 @@ const loadPublications = async () => {
 
     let response: any
 
-    // Se há critérios de pesquisa, usar endpoint de search
+    // If there are search criteria, use the search endpoint
     const hasSearchCriteria = searchTitle.value || searchAuthorId.value || searchScientificArea.value || 
                               searchDateFrom.value || searchDateTo.value
     
@@ -112,7 +112,7 @@ const loadPublications = async () => {
       if (searchDateFrom.value) searchBody.date_from = searchDateFrom.value
       if (searchDateTo.value) searchBody.date_to = searchDateTo.value
 
-      console.log('Pesquisando publicações:', searchBody)
+      console.log('Searching publications:', searchBody)
 
       response = await $fetch(`${api}/posts/search`, {
         method: 'POST',
@@ -125,7 +125,7 @@ const loadPublications = async () => {
         body: searchBody
       })
     } else if (sortBy.value) {
-      // Se sortBy está definido, usa ordenação
+      // If sortBy is defined, use sorting
       response = await $fetch(`${api}/posts/sort`, {
         method: 'POST',
         headers: {
@@ -140,7 +140,7 @@ const loadPublications = async () => {
         }
       })
     } else {
-      // Buscar sem ordenação (ordem padrão da API)
+      // Fetch without sorting (API default order)
       response = await $fetch(`${api}/posts`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -152,10 +152,10 @@ const loadPublications = async () => {
 
     console.log('Resposta completa:', response)
 
-    // Processar dados
+    // Process data
     let data = Array.isArray(response) ? response : (response?.data || [])
     
-    // Normalizar publicações PRIMEIRO
+    // Normalize publications first
     data = data.map((p: any) => {
       const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
       
@@ -169,7 +169,7 @@ const loadPublications = async () => {
       }
     })
     
-    // Log antes dos filtros
+    // Log before filters
     if (sortBy.value) {
       console.log(`📊 Ordem do backend (${sortBy.value}):`, data.slice(0, 5).map((p: any) => ({
         id: p.id,
@@ -177,7 +177,7 @@ const loadPublications = async () => {
       })))
     }
     
-    // Aplicar filtro de visibilidade no frontend
+    // Apply visibility filter on the frontend
     if (selectedFilter.value !== 'all') {
       data = data.filter((p: any) => {
         const isVisible = p?.is_visible ?? p?.visible ?? false
@@ -185,7 +185,7 @@ const loadPublications = async () => {
       })
     }
 
-    // Aplicar filtro de tag no frontend
+    // Apply tag filter on the frontend
     if (selectedTag.value !== null) {
       data = data.filter((p: any) => {
         const publicationTags = p?.tags || []
@@ -195,16 +195,16 @@ const loadPublications = async () => {
     
     publications.value = data
 
-    // Atualizar total
+    // Update total
     totalItems.value = publications.value.length
 
-    console.log('Total de itens:', totalItems.value)
-    console.log('Publicações carregadas:', publications.value.length)
+    console.log('Total items:', totalItems.value)
+    console.log('Publications loaded:', publications.value.length)
   } catch (error) {
-    console.error('Erro ao carregar publicações:', error)
+    console.error('Error loading publications:', error)
     toast.add({
-      title: 'Erro',
-      description: 'Falha ao carregar publicações',
+      title: 'Error',
+      description: 'Failed to load publications',
       color: 'error'
     })
   } finally {
@@ -212,71 +212,71 @@ const loadPublications = async () => {
   }
 }
 
-// ===== WATCHERS - DEVEM VIR DEPOIS DAS FUNÇÕES =====
+// ===== WATCHERS - SHOULD COME AFTER FUNCTIONS =====
 watch(searchTitle, async () => {
-  console.log('🔍 Pesquisa por título:', searchTitle.value)
+  console.log('🔍 Title search:', searchTitle.value)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(searchAuthorId, async () => {
-  console.log('🔍 Pesquisa por autor ID:', searchAuthorId.value)
+  console.log('🔍 Author ID search:', searchAuthorId.value)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(searchScientificArea, async () => {
-  console.log('🔍 Pesquisa por área científica:', searchScientificArea.value)
+  console.log('🔍 Scientific area search:', searchScientificArea.value)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(searchDateFrom, async () => {
-  console.log('🔍 Pesquisa de data:', searchDateFrom.value)
+  console.log('🔍 From date search:', searchDateFrom.value)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(searchDateTo, async () => {
-  console.log('🔍 Pesquisa até data:', searchDateTo.value)
+  console.log('🔍 To date search:', searchDateTo.value)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(selectedFilter, async (newFilter) => {
-  console.log('🔔 Filtro de visibilidade mudou para:', newFilter)
+  console.log('🔔 Visibility filter changed to:', newFilter)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(selectedTag, async (newTag) => {
-  console.log('🔔 Tag mudou para:', newTag)
+  console.log('🔔 Tag changed to:', newTag)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(sortBy, async (newSort) => {
-  console.log('🔔 Ordenação mudou para:', newSort)
+  console.log('🔔 Sort changed to:', newSort)
   currentPage.value = 1
   await loadPublications()
 })
 
 watch(sortOrder, async (newOrder) => {
-  console.log('🔔 Ordem mudou para:', newOrder)
+  console.log('🔔 Order changed to:', newOrder)
   currentPage.value = 1
   await loadPublications()
 })
 
 
-// ===== ALTERAR PÁGINA =====
+// ===== CHANGE PAGE =====
 const handlePageChange = async (page: number) => {
-  console.log('🔄 Mudando página para:', page)
+  console.log('🔄 Changing page to:', page)
   currentPage.value = page
   await loadPublications()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-// ===== ALTERAR VISIBILIDADE =====
+// ===== TOGGLE VISIBILITY =====
 const handleToggleVisibility = async (publicationId: number, newVisibility: boolean) => {
   try {
     await togglePublicationVisibility(publicationId, newVisibility)
@@ -284,62 +284,62 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
 
 
     toast.add({
-      title: 'Sucesso',
-      description: newVisibility ? 'Publicação visível' : 'Publicação oculta',
+      title: 'Success',
+      description: newVisibility ? 'Publication is now visible' : 'Publication is now hidden',
       color: 'success'
     })
   } catch (error) {
     toast.add({
-      title: 'Erro',
-      description: 'Falha ao alterar visibilidade',
+      title: 'Error',
+      description: 'Failed to change visibility',
       color: 'error'
     })
   }
 }
 
-// ===== ABRIR MODAL DE RATING =====
+// ===== OPEN RATING MODAL =====
 const handleRatePublication = (publication: any) => {
   selectedPublicationForRating.value = publication
   showRateModal.value = true
 }
 
-// ===== RATING SUBMETIDO =====
+// ===== RATING SUBMITTED =====
 const handleRatingSubmitted = async () => {
   showRateModal.value = false
   selectedPublicationForRating.value = null
   await loadPublications()
 }
 
-// ===== ABRIR MODAL DE EDITAR RESUMO =====
+// ===== OPEN EDIT SUMMARY MODAL =====
 const handleEditSummary = (publication: any) => {
-  console.log('📝 Publicação selecionada para editar:', publication)
-  console.log('📝 Área científica:', publication.scientific_area)
+  console.log('📝 Publication selected for edit:', publication)
+  console.log('📝 Scientific area:', publication.scientific_area)
   console.log('📝 ScientificArea:', publication.scientificArea)
   selectedPublicationForEdit.value = publication
   showEditModal.value = true
 }
 
-// ===== RESUMO ATUALIZADO =====
+// ===== SUMMARY UPDATED =====
 const handleEditModal = async () => {
   showEditModal.value = false
   selectedPublicationForEdit.value = null
   await loadPublications()
 }
 
-// ===== PUBLICAÇÃO CRIADA COM SUCESSO =====
+// ===== PUBLICATION CREATED SUCCESSFULLY =====
 const handlePublicationCreated = async () => {
   showAddModal.value = false
   toast.add({
-    title: 'Sucesso',
-    description: 'Publicação criada com sucesso',
+    title: 'Success',
+    description: 'Publication created successfully',
     color: 'success'
   })
   await loadPublications()
 }
 
-// ===== INICIALIZAR =====
+// ===== INITIALIZE =====
 onMounted(async () => {
-  console.log('Componente montado, carregando publicações e tags...')
+  console.log('Component mounted, loading publications and tags...')
   await Promise.all([loadTags(), loadPublications()])
 })
 
@@ -350,71 +350,71 @@ onMounted(async () => {
     <!-- HEADER -->
     <template #header>
       <!-- Navbar -->
-      <UDashboardNavbar title="Publicações">
+      <UDashboardNavbar title="Publications">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
           <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
-            Nova Publicação
+            New Publication
           </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <!-- BODY -->
-    <template #body>      <!-- Pesquisa -->
+    <template #body>      <!-- Search -->
       <div class="mb-6 space-y-4">
         <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <UIcon name="i-lucide-search" class="w-4 h-4" />
-          <span>Pesquisar Publicações</span>
+          <span>Search Publications</span>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Pesquisa por Título -->
+          <!-- Search by Title -->
           <UInput 
             v-model="searchTitle"
             icon="i-lucide-text"
-            placeholder="Pesquisar por título..."
+            placeholder="Search by title..."
             clearable
           />
 
-          <!-- Pesquisa por Autor ID -->
+          <!-- Search by Author ID -->
           <UInput 
             v-model="searchAuthorId"
             icon="i-lucide-user"
             type="number"
-            placeholder="ID do autor..."
+            placeholder="Author ID..."
             clearable
           />
 
-          <!-- Pesquisa por Área Científica -->
+          <!-- Search by Scientific Area -->
           <UInput 
             v-model="searchScientificArea"
             icon="i-lucide-flask-conical"
-            placeholder="Área científica..."
+            placeholder="Scientific area..."
             clearable
           />
         </div>
 
-        <!-- Segunda linha de pesquisa -->
+        <!-- Second search row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Data de -->
+          <!-- Date from -->
           <UInput 
             v-model="searchDateFrom"
             type="date"
             icon="i-lucide-calendar"
-            placeholder="Data início..."
+            placeholder="Start date..."
             clearable
           />
 
-          <!-- Data até -->
+          <!-- Date to -->
           <UInput 
             v-model="searchDateTo"
             type="date"
             icon="i-lucide-calendar"
-            placeholder="Data fim..."
+            placeholder="End date..."
             clearable
           />
         </div>
@@ -422,15 +422,15 @@ onMounted(async () => {
       <!-- Filtros -->
       <div class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Visibilidade -->
+          <!-- Visibility -->
           <USelect 
             v-model="selectedFilter" 
             :items="[
-              { value: 'all', label: 'Todas' },
-              { value: 'visible', label: 'Visíveis' },
-              { value: 'hidden', label: 'Ocultas' }
+              { value: 'all', label: 'All' },
+              { value: 'visible', label: 'Visible' },
+              { value: 'hidden', label: 'Hidden' }
             ]" 
-            placeholder="Filtrar por visibilidade"
+            placeholder="Filter by visibility"
             clearable
           />
 
@@ -438,10 +438,10 @@ onMounted(async () => {
           <USelect 
             v-model="selectedTag" 
             :items="[
-              { value: null, label: 'Todas as tags' },
+              { value: null, label: 'All tags' },
               ...tags.map(tag => ({ value: tag.id, label: tag.name }))
             ]"
-            placeholder="Filtrar por tag"
+            placeholder="Filter by tag"
             :loading="tagsLoading"
             searchable
             clearable
@@ -450,25 +450,25 @@ onMounted(async () => {
 
         <!-- Ordenação -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-          <!-- Ordenar por -->
+          <!-- Order by -->
           <USelect 
             v-model="sortBy" 
             :items="[
-              { value: 'average_rating', label: 'Melhor Avaliado' },
-              { value: 'ratings_count', label: 'Mais Avaliado' },
-              { value: 'comments_count', label: 'Mais Comentado' }
+              { value: 'average_rating', label: 'Top Rated' },
+              { value: 'ratings_count', label: 'Most Rated' },
+              { value: 'comments_count', label: 'Most Commented' }
             ]" 
-            placeholder="Ordenar por"
+            placeholder="Order by"
           />
 
-          <!-- Ordem -->
+          <!-- Order -->
           <USelect 
             v-model="sortOrder" 
             :items="[
-              { value: 'desc', label: 'Descendente' },
-              { value: 'asc', label: 'Ascendente' }
+              { value: 'desc', label: 'Descending' },
+              { value: 'asc', label: 'Ascending' }
             ]" 
-            placeholder="Ordem"
+            placeholder="Order"
           />
         </div>
       </div>
@@ -480,7 +480,7 @@ onMounted(async () => {
       <!-- Sem resultados -->
       <div v-else-if="publications.length === 0" class="text-center py-16 text-gray-500">
         <UIcon name="i-lucide-inbox" class="mx-auto text-5xl mb-4" />
-        Nenhuma publicação encontrada
+        No publications found
       </div>
 
       <!-- Lista -->
