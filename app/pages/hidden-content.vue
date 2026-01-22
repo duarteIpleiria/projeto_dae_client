@@ -62,8 +62,6 @@
       <template v-if="selectedType === 'publications'">
         <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
           <div class="flex items-start gap-4">
-            <UCheckbox v-model="selectedItems" :value="item.id" class="mt-1" />
-            
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="flex-1 min-w-0">
@@ -108,8 +106,6 @@
       <template v-if="selectedType === 'comments'">
         <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
           <div class="flex items-start gap-4">
-            <UCheckbox v-model="selectedItems" :value="item.id" class="mt-1" />
-            
             <div class="flex-1 min-w-0">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <div class="flex-1">
@@ -153,8 +149,6 @@
       <template v-if="selectedType === 'tags'">
         <UCard v-for="item in hiddenItems" :key="item.id" class="hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
           <div class="flex items-center gap-4">
-            <UCheckbox v-model="selectedItems" :value="item.id" />
-            
             <div class="flex-1 flex items-center justify-between">
               <div>
                 <h3 class="font-semibold text-lg">{{ item.name }}</h3>
