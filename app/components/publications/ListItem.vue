@@ -91,11 +91,11 @@ const userRating = computed(() => {
 })
 
 // Filter comments to display based on visibility
-// Admin/Responsavel can see all comments, others only see visible ones
+// Admin/Manager can see all comments, others only see visible ones
 const visibleComments = computed(() => {
   if (!props.publication.comments) return []
   
-  // Admin and Responsavel can see all comments (including hidden ones)
+  // Admin and Manager can see all comments (including hidden ones)
   if (canManageComments.value) {
     return props.publication.comments
   }
@@ -128,12 +128,12 @@ const canEdit = computed(() => {
   return isAuthor.value
 })
 
-// Check if user can change publication visibility (author or admin/responsavel)
+// Check if user can change publication visibility (author or admin/manager)
 const canChangeVisibility = computed(() => {
   return isAuthor.value || canManageComments.value
 })
 
-// Check if user can change confidentiality (only admin/responsavel)
+// Check if user can change confidentiality (only admin/manager)
 const canChangeConfidential = computed(() => {
   return isAdminOrManager(authStore.user?.role)
 })
@@ -754,7 +754,7 @@ const hasFile = computed(() => {
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
-          <!-- Toggle confidential (only admin/responsavel) -->
+          <!-- Toggle confidential (only admin/manager) -->
           <UButton 
             v-if="canChangeConfidential" 
             color="orange" 
@@ -903,7 +903,7 @@ const hasFile = computed(() => {
               Comments ({{ visibleComments.length }})
             </h4>
             
-            <!-- Toggle All Comments Button (Only for Admin/Responsavel) -->
+            <!-- Toggle All Comments Button (Only for Admin/Manager) -->
             <UButton 
               v-if="canManageComments"
               :icon="commentsVisibilityState ? 'i-lucide-eye-off' : 'i-lucide-eye'"

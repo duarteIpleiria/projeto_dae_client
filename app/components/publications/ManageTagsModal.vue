@@ -58,10 +58,10 @@ const tagOptions = computed(() => {
 
 const loading = computed(() => loadingTags.value || loadingOperation.value)
 
-// Check if user can remove tags (not Colaborador)
+// Check if user can remove tags (not Collaborator)
 const canRemoveTags = computed(() => {
   const role = authStore.user?.role
-  return role === 'Administrador' || role === 'Responsavel'
+  return role === 'Administrator' || role === 'Manager'
 })
 
 const addTags = async () => {

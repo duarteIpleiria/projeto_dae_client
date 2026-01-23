@@ -24,7 +24,7 @@ const toast = useToast()
 const open = ref(false)
 
 const schema = z.object({
-  role: z.enum(['Colaborador', 'Responsavel', 'Administrador'], {
+  role: z.enum(['Collaborator', 'Manager', 'Administrator'], {
     required_error: 'Role is required'
   })
 })
@@ -32,13 +32,13 @@ const schema = z.object({
 type Schema = z.output<typeof schema>
 
 const state = reactive<Schema>({
-  role: 'Colaborador'
+  role: 'Collaborator'
 })
 
 const roleOptions = [
-  'Colaborador',
-  'Responsavel',
-  'Administrador'
+  'Collaborator',
+  'Manager',
+  'Administrator'
 ]
 
 // Open modal when user is set
@@ -109,7 +109,7 @@ async function onSubmit() {
         <UFormField label="Role" name="role" required>
           <select v-model="state.role" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
             <option v-for="role in roleOptions" :key="role" :value="role">
-              {{ role === 'Responsavel' ? 'Responsavel' : role }}
+              {{ role }}
             </option>
           </select>
         </UFormField>

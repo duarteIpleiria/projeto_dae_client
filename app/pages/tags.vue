@@ -32,7 +32,7 @@ const { data: userData, refresh: refreshUser } = await useFetch(`${api}/auth/use
 
 const tags = computed(() => (data.value as any) || []);
 
-// Check if user can manage tag visibility (Administrador or Responsavel)
+// Check if user can manage tag visibility (Administrator or Manager)
 const canManageVisibility = computed(() => {
   return isAdminOrManager(authStore.user?.role)
 })
@@ -42,7 +42,7 @@ const canManageVisibility = computed(() => {
 watch(userData, (newData) => {
   const user = newData as any
   if (user && user.subscribedTags && Array.isArray(user.subscribedTags)) {
-    // Filtrar tags ocultas para usuários que não são admin/responsavel
+    // Filter out hidden tags for non-admin users
     const subscribedTags = canManageVisibility.value 
       ? user.subscribedTags 
       : user.subscribedTags.filter((tag: Tag) => tag.visible === true || tag.visible === undefined || tag.visible === null)
@@ -486,7 +486,7 @@ async function unsubscribeFromTag(tag: Tag) {
             </div>
           </div>
 
-          <!-- Hidden tags section (only for Administrador and Responsavel) -->
+          <!-- Hidden tags section (only for Administrator and Manager) -->
           <div 
             v-if="canManageVisibility"
             :class="{ 
@@ -568,7 +568,7 @@ async function unsubscribeFromTag(tag: Tag) {
             </div>
           </div>
 
-          <!-- Trash zone (only for Administrador and Responsavel) -->
+          <!-- Trash zone (only for Administrator and Manager) -->
           <div 
             v-if="canManageVisibility"
             :class="{ 
