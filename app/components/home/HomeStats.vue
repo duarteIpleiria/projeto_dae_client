@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { Period, Range } from '~/types'
+import { useAuthStore } from '~/stores/auth-store'
+import { storeToRefs } from 'pinia'
 
 const props = defineProps<{
   period: Period
   range: Range
 }>()
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const config = useRuntimeConfig()
 const api = config.public.apiBase
@@ -44,7 +49,7 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
     // Extract data from search response
     const publications = Array.isArray(publicationsRes) 
       ? publicationsRes 
-      : (publicationsRes?.data || [])
+      : ((publicationsRes as any)?.data || [])
     const tags = Array.isArray(tagsRes) ? tagsRes : []
 
     console.log('Dashboard - Publications:', publications)
@@ -75,14 +80,8 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
     console.log('Total publications:', publications.length)
     console.log('Visible publications:', visiblePublications)
 
-    return [
-      {
-        title: 'Users',
-        icon: 'i-lucide-users',
-        value: users.length,
-        color: 'primary',
-        to: '/users'
-      },
+    // Build stats array - only include Users card for Administrator
+    const allStats = [
       {
         title: 'Publications',
         icon: 'i-lucide-file-text',
@@ -116,6 +115,20 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
         color: 'primary'
       }
     ]
+
+    // Only add Users card if user is Administrator
+    const currentUser = user.value as any
+    if (currentUser?.role === 'Administrator') {
+      allStats.unshift({
+        title: 'Users',
+        icon: 'i-lucide-users',
+        value: users.length,
+        color: 'primary',
+        to: '/users'
+      })
+    }
+
+    return allStats
   } catch (error) {
     console.error('Error loading statistics:', error)
     return []

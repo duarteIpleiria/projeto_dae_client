@@ -30,17 +30,15 @@ const links = computed(() => {
 
   const baseLinks: NavigationMenuItem[] = []
 
-  // Add Home link only for Administrator
-  if (isAdmin(authStore.user?.role)) {
-    baseLinks.push({
-      label: 'Home',
-      icon: 'i-lucide-house',
-      to: '/',
-      onSelect: () => {
-        open.value = false
-      }
-    })
-  }
+  // Add Home link for all authenticated users
+  baseLinks.push({
+    label: 'Home',
+    icon: 'i-lucide-house',
+    to: '/',
+    onSelect: () => {
+      open.value = false
+    }
+  })
 
   // Publications and Tags for all authenticated users
   baseLinks.push({
