@@ -34,7 +34,11 @@ const state = reactive<Partial<Schema>>({
 
 const toast = useToast()
 
-const roleOptions = ['Administrador', 'Responsavel', 'Colaborador']
+const roleOptions = [
+  { value: 'Administrator', label: 'Administrator' },
+  { value: 'Manager', label: 'Manager' },
+  { value: 'Collaborator', label: 'Collaborator' }
+]
 
 // Clear variables when modal is closed
 watch(open, (value) => {
@@ -97,9 +101,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </UFormField>
 
         <UFormField label="Role" name="role">
-          <select v-model="state.role" class="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500">
+          <select 
+            v-model="state.role" 
+            class="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          >
             <option value="" disabled>Select a role</option>
-            <option v-for="role in roleOptions" :key="role" :value="role">{{ role }}</option>
+            <option value="Administrator">Administrator</option>
+            <option value="Manager">Manager</option>
+            <option value="Collaborator">Collaborator</option>
           </select>
         </UFormField>
 
