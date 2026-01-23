@@ -115,7 +115,7 @@ onMounted(async () => {
     <UDashboardSidebar id="default" v-model:open="open" collapsible resizable class="bg-elevated/25"
       :ui="{ footer: 'lg:border-t lg:border-default' }">
       <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
+        Projeto DAE
       </template>
 
       <template #default="{ collapsed }">
