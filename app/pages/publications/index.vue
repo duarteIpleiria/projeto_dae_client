@@ -552,6 +552,7 @@ onMounted(async () => {
           <USelect 
             v-model="sortBy" 
             :items="[
+              { value: null, label: 'All (default order)' },
               { value: 'average_rating', label: 'Top Rated' },
               { value: 'ratings_count', label: 'Most Rated' },
               { value: 'comments_count', label: 'Most Commented' }
