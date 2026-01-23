@@ -259,10 +259,24 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
         <!-- Scientific Area -->
         <UFormField label="Scientific Area" name="scientific_area">
-          <UInput 
-            v-model="state.scientific_area" 
-            class="w-full" 
-            placeholder="e.g., Data Science, Materials Science, Biology" 
+          <USelect 
+            v-model="state.scientific_area"
+            class="w-full"
+            :items="[
+              { value: 'Peer-reviewed scientific articles', label: 'Peer-reviewed scientific articles' },
+              { value: 'Conference proceedings', label: 'Conference proceedings' },
+              { value: 'Book chapters or scientific books', label: 'Book chapters or scientific books' },
+              { value: 'Technical reports', label: 'Technical reports' },
+              { value: 'Patents', label: 'Patents' },
+              { value: 'Scientific data (datasets)', label: 'Scientific data (datasets)' },
+              { value: 'Software (open source)', label: 'Software (open source)' },
+              { value: 'AI models', label: 'AI models' },
+              { value: 'Databases', label: 'Databases' },
+              { value: 'Master\'s or doctoral theses', label: 'Master\'s or doctoral theses' },
+              { value: 'Scientific outreach articles', label: 'Scientific outreach articles' }
+            ]"
+            placeholder="Select scientific area"
+            searchable
           />
         </UFormField>
 
