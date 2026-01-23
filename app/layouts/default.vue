@@ -16,16 +16,9 @@ const canAccessHiddenContent = computed(() => {
 })
 
 const links = computed(() => {
-  // Se não estiver autenticado, mostrar home e publications
+  // Se não estiver autenticado, mostrar apenas publications
   if (!authStore.user) {
     return [[{
-      label: 'Home',
-      icon: 'i-lucide-house',
-      to: '/',
-      onSelect: () => {
-        open.value = false
-      }
-    }, {
       label: 'Publications',
       icon: 'i-lucide-book-open-check',
       to: '/publications',
