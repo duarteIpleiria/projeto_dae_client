@@ -37,6 +37,11 @@ const loginFormData = reactive({
   password: ""
 })
 
+// Continue without login
+const continueWithoutLogin = () => {
+  router.push('/publications')
+}
+
 
 async function login() {
   loading.value = true
@@ -117,7 +122,27 @@ async function login() {
         </UFormGroup>
 
         <UButton type="submit" block size="lg" color="primary" :loading="loading">
-          Entrar
+          Sign In
+        </UButton>
+
+        <!-- Divider -->
+        <div class="flex items-center gap-4">
+          <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+          <span class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">or</span>
+          <div class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></div>
+        </div>
+
+        <!-- Continue without login option -->
+        <UButton 
+          type="button" 
+          block 
+          size="lg" 
+          color="neutral" 
+          variant="ghost"
+          @click="continueWithoutLogin"
+          icon="i-lucide-users"
+        >
+          Continue as Guest
         </UButton>
       </UForm>
 
