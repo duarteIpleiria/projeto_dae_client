@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 
 import { useAuthStore } from '~/stores/auth-store'
 import { storeToRefs } from 'pinia'
@@ -289,11 +290,17 @@ watch(searchDateTo, async (newDateTo) => {
   await loadPublications()
 })
 
-// Watch for title search changes to auto-refresh
-watch(searchTitle, async (newTitle) => {
-  console.log('🔍 Title search changed to:', newTitle)
+// Debounced search function to prevent race conditions
+const debouncedSearch = useDebounceFn(async () => {
+  console.log('🔍 Debounced search triggered with title:', searchTitle.value)
   currentPage.value = 1
   await loadPublications()
+}, 400)
+
+// Watch for title search changes to auto-refresh (with debounce)
+watch(searchTitle, (newTitle) => {
+  console.log('🔍 Title search changed to:', newTitle)
+  debouncedSearch()
 })
 
 // ===== CHANGE PAGE =====
@@ -459,7 +466,6 @@ onMounted(async () => {
             icon="i-lucide-text"
             placeholder="Search by title..."
             clearable
-            @input="applyFilters"
           />
 
           <!-- Search by Author -->
