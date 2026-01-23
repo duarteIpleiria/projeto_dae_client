@@ -324,6 +324,8 @@ definePageMeta({
   layout: 'default'
 })
 
+import { isAdminOrManager } from '~/utils'
+
 const authStore = useAuthStore()
 const config = useRuntimeConfig()
 const api = config.public.apiBase
@@ -331,7 +333,7 @@ const toast = useToast()
 
 // Role guard
 const canAccessHiddenContent = computed(() => {
-  return authStore.user?.role === 'Administrator' || authStore.user?.role === 'Manager'
+  return isAdminOrManager(authStore.user?.role)
 })
 
 onMounted(() => {

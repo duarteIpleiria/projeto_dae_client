@@ -2,6 +2,7 @@
 
 
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { isAdminOrManager, isAdmin } from '~/utils'
 
 const route = useRoute()
 const toast = useToast()
@@ -11,7 +12,7 @@ const open = ref(false)
 
 // Check if user can access hidden content
 const canAccessHiddenContent = computed(() => {
-  return authStore.user?.role === 'Administrator' || authStore.user?.role === 'Manager'
+  return isAdminOrManager(authStore.user?.role)
 })
 
 const links = computed(() => {
@@ -51,7 +52,7 @@ const links = computed(() => {
   }]
 
   // Add Users link only for Administrator
-  if (authStore.user?.role === 'Administrator') {
+  if (isAdmin(authStore.user?.role)) {
     baseLinks.push({
       label: 'Users',
       icon: 'i-lucide-user',
