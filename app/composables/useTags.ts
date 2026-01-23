@@ -15,24 +15,38 @@ export const useTags = () => {
     const api = getApiBase()
     const token = getAuthToken()
 
-    if (!token) {
-      error.value = 'Authentication required'
-      loading.value = false
-      return []
-    }
+    console.log('[useTags] Iniciando carregamento de tags...')
+    console.log('[useTags] API Base:', api)
 
     try {
-      const response = await $fetch<Tag[]>(`${api}/tags`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      const headers: any = {}
+      
+      // Adicionar token apenas se disponível (não é obrigatório para listar tags)
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+
+      // Testar com fetch nativo primeiro
+      const response = await fetch(`${api}/tags`, {
+        method: 'GET',
+        headers,
+        mode: 'cors'
       })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+
+      console.log('[useTags] Resposta da API (fetch nativo):', data)
 
       // Filter out hidden tags unless explicitly requested
       tags.value = includeHidden 
-        ? response 
-        : response.filter(tag => tag.visible === true || tag.visible === undefined || tag.visible === null)
+        ? data 
+        : data.filter((tag: any) => tag.visible === true || tag.visible === undefined || tag.visible === null)
       
+      console.log('[useTags] Tags filtradas:', tags.value)
       return tags.value
     } catch (e: any) {
       error.value = e.data?.message || 'Failed to fetch tags'

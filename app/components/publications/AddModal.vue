@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { Tag } from '~/types'
 
 interface Props {
   modelValue?: boolean
@@ -17,8 +18,13 @@ const emit = defineEmits<{
 }>()
 
 const { createPublication, loading, error } = usePublications()
+const { fetchTags, loading: tagsLoading, error: tagsError } = useTags()
 const authStore = useAuthStore()
 const toast = useToast()
+
+const availableTags = ref<Tag[]>([])
+const selectedTags = ref<number[]>([])
+const initialComment = ref('')
 
 const open = computed({
   get: () => props.modelValue,
@@ -30,10 +36,33 @@ const isAdminOrResponsavel = computed(() => {
   return !!authStore.user
 })
 
+onMounted(async () => {
+  try {
+    availableTags.value = await fetchTags()
+    console.log('Tags carregadas:', availableTags.value)
+    
+    if (!availableTags.value || availableTags.value.length === 0) {
+      toast.add({
+        title: 'Warning',
+        description: 'No tags available. You can still create the publication without tags.',
+        color: 'orange'
+      })
+    }
+  } catch (e) {
+    console.error('Erro ao carregar tags:', e)
+    toast.add({
+      title: 'Error',
+      description: 'Failed to load tags. You can still create the publication without tags.',
+      color: 'error'
+    })
+  }
+})
+
 const schema = z.object({
   title: z.string().min(3, 'Title must have at least 3 characters'),
   scientific_area: z.string().min(3, 'Scientific area is required'),
-  is_visible: z.boolean()
+  is_visible: z.boolean(),
+  is_confidential: z.boolean().optional()
 })
 
 type Schema = z.output<typeof schema>
@@ -73,6 +102,8 @@ watch(open, (value) => {
     state.is_visible = false
     state.is_confidential = false
     file.value = null
+    selectedTags.value = []
+    initialComment.value = ''
   }
 })
 
@@ -101,7 +132,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       scientific_area: event.data.scientific_area,
       is_visible: event.data.is_visible,
       is_confidential: event.data.is_confidential,
-      file: file.value
+      file: file.value,
+      tags: selectedTags.value,
+      initial_comment: initialComment.value.trim() || undefined
     })
 
     toast.add({
@@ -166,6 +199,51 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <p class="text-xs text-gray-500 mt-1">Unauthenticated visitors will not see this publication</p>
         </UFormField>
 
+        <!-- Tags -->
+        <UFormField label="Tags" name="tags">
+          <div v-if="availableTags && availableTags.length > 0">
+            <!-- Lista de checkboxes com estilo similar ao textarea -->
+            <div class="grid grid-cols-2 gap-3 p-3 border border-gray-200 rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700">
+              <label v-for="tag in availableTags" :key="tag.id" class="flex items-center space-x-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  :value="tag.id" 
+                  v-model="selectedTags"
+                  class="rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700"
+                />
+                <span class="text-gray-700 dark:text-gray-300">{{ tag.name }}</span>
+              </label>
+            </div>
+            
+            <!-- Info sobre tags selecionadas -->
+            <div v-if="selectedTags.length > 0" class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              {{ selectedTags.length }} tag{{ selectedTags.length !== 1 ? 's' : '' }} selected
+            </div>
+          </div>
+          
+          <div v-else-if="tagsLoading" class="p-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-center">
+            <UIcon name="i-lucide-loader-2" class="animate-spin w-5 h-5 mx-auto" />
+            <p class="text-sm text-gray-500 mt-2">Loading tags...</p>
+          </div>
+          
+          <div v-else class="p-4 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-center">
+            <p class="text-sm text-gray-500">{{ tagsError || 'No tags available' }}</p>
+          </div>
+          
+          <p class="text-xs text-gray-500 mt-1">Select tags to categorize your publication</p>
+        </UFormField>
+
+        <!-- Initial Comment -->
+        <UFormField label="Initial Comment" name="initial_comment">
+          <UTextarea
+            v-model="initialComment"
+            placeholder="Add an initial comment about your publication (optional)"
+            :rows="3"
+            resize
+          />
+          <p class="text-xs text-gray-500 mt-1">This comment will be added automatically after publication creation</p>
+        </UFormField>
+
        
         <UFormField label="File" name="file">
           <UFileUpload v-model="file" accept=".pdf,.zip" :multiple="false">
@@ -196,7 +274,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                     ? 'i-lucide-file-text'
                     : 'i-lucide-archive'" class="h-4 w-4 text-primary-600" />
 
-                  <span class="max-w-[180px] truncate text-sm text-gray-700 dark:text-gray-300">
+                  <span class="max-w-45 truncate text-sm text-gray-700 dark:text-gray-300">
                     {{ file.name }}
                   </span>
 
