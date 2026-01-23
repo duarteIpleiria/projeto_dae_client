@@ -31,8 +31,9 @@ const selectedPublicationForRating = ref<any>(null)
 const selectedPublicationForEdit = ref<any>(null)
 
 const searchTitle = ref('')
-const searchAuthorId = ref('')
-const searchScientificArea = ref('')
+const searchAuthorId = ref('ALL_AUTHORS')
+const searchTagId = ref('ALL_TAGS')
+const searchScientificArea = ref('ALL_AREAS')
 const searchDateFrom = ref('')
 const searchDateTo = ref('')
 const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count' | null>(null)
@@ -125,8 +126,9 @@ const loadPublications = async () => {
 
     // If there are search criteria, use the search endpoint (only for authenticated users)
     const hasSearchCriteria = (searchTitle.value && searchTitle.value.trim()) || 
-                              (searchAuthorId.value && searchAuthorId.value.trim()) || 
-                              (searchScientificArea.value && searchScientificArea.value.trim()) || 
+                              (searchAuthorId.value && searchAuthorId.value.trim() && searchAuthorId.value !== 'ALL_AUTHORS') || 
+                              (searchTagId.value && searchTagId.value.trim() && searchTagId.value !== 'ALL_TAGS') ||
+                              (searchScientificArea.value && searchScientificArea.value.trim() && searchScientificArea.value !== 'ALL_AREAS') || 
                               (searchDateFrom.value && searchDateFrom.value.trim()) || 
                               (searchDateTo.value && searchDateTo.value.trim())
     
@@ -134,15 +136,23 @@ const loadPublications = async () => {
     if (hasSearchCriteria && token) {
       const searchBody: any = {}
       if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
-      if (searchAuthorId.value && searchAuthorId.value.trim()) {
+      if (searchAuthorId.value && searchAuthorId.value.trim() && searchAuthorId.value !== 'ALL_AUTHORS') {
         const authorIdNum = parseInt(searchAuthorId.value)
         if (!isNaN(authorIdNum)) {
-          searchBody.author_id = authorIdNum
+          searchBody.authorId = authorIdNum
         }
       }
-      if (searchScientificArea.value && searchScientificArea.value.trim()) searchBody.scientific_area = searchScientificArea.value.trim()
-      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.date_from = searchDateFrom.value.trim()
-      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.date_to = searchDateTo.value.trim()
+      if (searchTagId.value && searchTagId.value.trim() && searchTagId.value !== 'ALL_TAGS') {
+        const tagIdNum = parseInt(searchTagId.value)
+        if (!isNaN(tagIdNum)) {
+          searchBody.tags = [tagIdNum]
+        }
+      }
+      if (searchScientificArea.value && searchScientificArea.value.trim() && searchScientificArea.value !== 'ALL_AREAS') {
+        searchBody.scientificArea = searchScientificArea.value.trim()
+      }
+      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.dateFrom = searchDateFrom.value.trim()
+      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.dateTo = searchDateTo.value.trim()
 
     console.log('🔍 Search body:', JSON.stringify(searchBody, null, 2))
 
@@ -430,6 +440,23 @@ onMounted(async () => {
             @change="applyFilters"
           />
 
+          <!-- Search by Tag -->
+          <USelect 
+            v-model="searchTagId"
+            :items="[
+              { value: 'ALL_TAGS', label: 'All tags' },
+              ...tags.map(tag => ({ value: tag.id.toString(), label: tag.name }))
+            ]"
+            icon="i-lucide-tag"
+            placeholder="Select tag"
+            :loading="tagsLoading"
+            searchable
+            @change="applyFilters"
+          />
+        </div>
+
+        <!-- Second search row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <!-- Search by Scientific Area -->
           <USelect 
             v-model="searchScientificArea"
@@ -452,10 +479,7 @@ onMounted(async () => {
             searchable
             @change="applyFilters"
           />
-        </div>
 
-        <!-- Second search row -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Date from -->
           <UInput 
             v-model="searchDateFrom"
