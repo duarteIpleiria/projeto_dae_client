@@ -35,14 +35,13 @@ const searchAuthorId = ref('')
 const searchScientificArea = ref('')
 const searchDateFrom = ref('')
 const searchDateTo = ref('')
+const selectedFilter = ref<'all' | 'visible' | 'hidden'>('all')
+const selectedTag = ref<number | null>(null)
 const sortBy = ref<'average_rating' | 'comments_count' | 'ratings_count' | null>(null)
 const sortOrder = ref<'asc' | 'desc'>('desc')
 
 const tags = ref<any[]>([])
 const tagsLoading = ref(false)
-
-const users = ref<any[]>([])
-const usersLoading = ref(false)
 
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
@@ -85,32 +84,6 @@ const loadTags = async () => {
   }
 }
 
-// ===== LOAD USERS =====
-const loadUsers = async () => {
-  try {
-    usersLoading.value = true
-    const config = useRuntimeConfig()
-    const api = config.public.apiBase
-    const token = authStore.token
-
-    console.log('Loading users from:', `${api}/users`)
-    const response = await $fetch(`${api}/users`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }) as any
-
-    console.log('✅ Users loaded:', response)
-    users.value = Array.isArray(response) ? response : (response?.data || [])
-    
-    console.log('📋 Users formatted:', users.value)
-  } catch (error) {
-    console.error('❌ Error loading users:', error)
-  } finally {
-    usersLoading.value = false
-  }
-}
-
 // ===== LOAD PUBLICATIONS =====
 const loadPublications = async () => {
   if (!loading.value) {
@@ -123,28 +96,24 @@ const loadPublications = async () => {
 
     let response: any
 
-    // If there are search criteria, use the search endpoint (only for authenticated users)
-    const hasSearchCriteria = (searchTitle.value && searchTitle.value.trim()) || 
-                              (searchAuthorId.value && searchAuthorId.value.trim()) || 
-                              (searchScientificArea.value && searchScientificArea.value.trim()) || 
-                              (searchDateFrom.value && searchDateFrom.value.trim()) || 
-                              (searchDateTo.value && searchDateTo.value.trim())
+    // If there are search criteria, use the search endpoint
+    const hasSearchCriteria = searchTitle.value || searchAuthorId.value || searchScientificArea.value || 
+                              searchDateFrom.value || searchDateTo.value
     
-    // Search is only available for authenticated users
-    if (hasSearchCriteria && token) {
+    if (hasSearchCriteria) {
       const searchBody: any = {}
-      if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
-      if (searchAuthorId.value && searchAuthorId.value.trim()) {
+      if (searchTitle.value) searchBody.title = searchTitle.value
+      if (searchAuthorId.value) {
         const authorIdNum = parseInt(searchAuthorId.value)
         if (!isNaN(authorIdNum)) {
           searchBody.author_id = authorIdNum
         }
       }
-      if (searchScientificArea.value && searchScientificArea.value.trim()) searchBody.scientific_area = searchScientificArea.value.trim()
-      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.date_from = searchDateFrom.value.trim()
-      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.date_to = searchDateTo.value.trim()
+      if (searchScientificArea.value) searchBody.scientific_area = searchScientificArea.value
+      if (searchDateFrom.value) searchBody.date_from = searchDateFrom.value
+      if (searchDateTo.value) searchBody.date_to = searchDateTo.value
 
-    console.log('🔍 Search body:', JSON.stringify(searchBody, null, 2))
+      console.log('Searching publications:', searchBody)
 
       response = await $fetch(`${api}/posts/search`, {
         method: 'POST',
@@ -158,18 +127,14 @@ const loadPublications = async () => {
       })
     } else if (sortBy.value) {
       // If sortBy is defined, use sorting
-      const sortHeaders: Record<string, string> = {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Accept': 'application/json; charset=UTF-8',
-        'Accept-Charset': 'UTF-8'
-      }
-      // Only add Authorization header if user is authenticated
-      if (token) {
-        sortHeaders.Authorization = `Bearer ${token}`
-      }
       response = await $fetch(`${api}/posts/sort`, {
         method: 'POST',
-        headers: sortHeaders,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        },
         body: {
           sort_by: sortBy.value,
           order: sortOrder.value
@@ -177,16 +142,12 @@ const loadPublications = async () => {
       })
     } else {
       // Fetch without sorting (API default order)
-      const headers: Record<string, string> = {
-        'Accept': 'application/json; charset=UTF-8',
-        'Accept-Charset': 'UTF-8'
-      }
-      // Only add Authorization header if user is authenticated
-      if (token) {
-        headers.Authorization = `Bearer ${token}`
-      }
       response = await $fetch(`${api}/posts`, {
-        headers
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Accept': 'application/json; charset=UTF-8',
+          'Accept-Charset': 'UTF-8'
+        }
       })
     }
 
@@ -195,16 +156,24 @@ const loadPublications = async () => {
     // Process data
     let data = Array.isArray(response) ? response : (response?.data || [])
     
-    // Normalize publications - API returns camelCase
+    // Normalize publications first
     data = data.map((p: any) => {
-      const commentsCount = p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
-      const isVisible = p?.visible ?? true
-      const isConfidential = p?.confidential ?? false
+      const commentsCount = p?.comments_count ?? p?.commentsCount ?? (Array.isArray(p?.comments) ? p.comments.length : 0)
+      const isVisible = p?.isVisible ?? p?.is_visible ?? p?.visible
+      const isConfidential = p?.isConfidential ?? p?.is_confidential ?? p?.confidential ?? false
+      
+      console.log(`📝 Publication ${p.id} (${p.title}):`, {
+        raw_isConfidential: p.isConfidential,
+        raw_is_confidential: p.is_confidential, 
+        raw_confidential: p.confidential,
+        normalizado_confidential: isConfidential,
+        isVisible: isVisible
+      })
       
       return {
         ...p,
-        average_rating: p?.averageRating ?? 0,
-        ratings_count: p?.ratingsCount ?? 0,
+        average_rating: p?.average_rating ?? p?.averageRating ?? 0,
+        ratings_count: p?.ratings_count ?? p?.ratingsCount ?? 0,
         comments_count: commentsCount,
         is_visible: isVisible,
         is_confidential: isConfidential,
@@ -212,7 +181,58 @@ const loadPublications = async () => {
       }
     })
     
+    // Log before filters
+    if (sortBy.value) {
+      console.log(`📊 Backend order (${sortBy.value}):`, data.slice(0, 5).map((p: any) => ({
+        id: p.id,
+        [sortBy.value]: p[sortBy.value]
+      })))
+    }
+    
+    // Apply confidential filter client-side (must come BEFORE visibility filter)
+    if (selectedFilter.value === 'confidential') {
+      const beforeFilter = data.length
+      console.log('🔍 Before confidential filter:', data.map(p => ({ 
+        id: p.id, 
+        title: p.title, 
+        is_confidential: p.is_confidential,
+        confidential: p.confidential 
+      })))
+      
+      data = data.filter((p: any) => {
+        const isConfidential = p?.is_confidential ?? p?.confidential ?? false
+        console.log(`Publication ${p.id}: is_confidential=${p.is_confidential}, confidential=${p.confidential}, result=${isConfidential}`)
+        return isConfidential
+      })
+      
+      console.log(`📊 Confidential filter applied: ${beforeFilter} -> ${data.length}`)
+      console.log('🔍 After filter:', data.map(p => ({ id: p.id, title: p.title })))
+    }
+    // Apply visibility filter on the frontend (ONLY if not already filtering by confidential)
+    else if (selectedFilter.value !== 'all') {
+      data = data.filter((p: any) => {
+        const isVisible = p?.is_visible ?? p?.visible ?? false
+        return selectedFilter.value === 'visible' ? isVisible : !isVisible
+      })
+    }
+    
+    console.log('📊 Total publications after filters:', data.length)
+
+    // Apply tag filter on the frontend
+    if (selectedTag.value !== null) {
+      data = data.filter((p: any) => {
+        const publicationTags = p?.tags || []
+        return publicationTags.some((tag: any) => tag.id === selectedTag.value)
+      })
+    }
+    
     publications.value = data
+
+    // Update total
+    totalItems.value = publications.value.length
+
+    console.log('Total items:', totalItems.value)
+    console.log('Publications loaded:', publications.value.length)
   } catch (error) {
     console.error('Error loading publications:', error)
     toast.add({
@@ -225,14 +245,49 @@ const loadPublications = async () => {
   }
 }
 
-// ===== APPLY FILTERS =====
-const applyFilters = async () => {
-  console.log('🔍 Applying filters')
+// ===== WATCHERS - SHOULD COME AFTER FUNCTIONS =====
+watch(searchTitle, async () => {
+  console.log('🔍 Title search:', searchTitle.value)
   currentPage.value = 1
   await loadPublications()
-}
+})
 
-// ===== WATCHERS - SHOULD COME AFTER FUNCTIONS =====
+watch(searchAuthorId, async () => {
+  console.log('🔍 Author ID search:', searchAuthorId.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchScientificArea, async () => {
+  console.log('🔍 Scientific area search:', searchScientificArea.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchDateFrom, async () => {
+  console.log('🔍 From date search:', searchDateFrom.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchDateTo, async () => {
+  console.log('🔍 To date search:', searchDateTo.value)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(selectedFilter, async (newFilter) => {
+  console.log('🔔 Visibility filter changed to:', newFilter)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(selectedTag, async (newTag) => {
+  console.log('🔔 Tag changed to:', newTag)
+  currentPage.value = 1
+  await loadPublications()
+})
+
 watch(sortBy, async (newSort) => {
   console.log('🔔 Sort changed to:', newSort)
   currentPage.value = 1
@@ -245,15 +300,12 @@ watch(sortOrder, async (newOrder) => {
   await loadPublications()
 })
 
-watch(currentPage, async () => {
-  console.log('🔄 Page changed to:', currentPage.value)
-  await loadPublications()
-})
 
 // ===== CHANGE PAGE =====
-const handlePageChange = (page: number) => {
+const handlePageChange = async (page: number) => {
   console.log('🔄 Changing page to:', page)
   currentPage.value = page
+  await loadPublications()
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -262,11 +314,16 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
   try {
     await togglePublicationVisibility(publicationId, newVisibility)
     
-    // Update the local state without reloading
-    const publication = publications.value.find(p => p.id === publicationId)
-    if (publication) {
-      publication.visible = newVisibility
-      publication.is_visible = newVisibility
+    // If filter is 'all', just update the local state without reloading
+    if (selectedFilter.value === 'all') {
+      const publication = publications.value.find(p => p.id === publicationId)
+      if (publication) {
+        publication.visible = newVisibility
+        publication.is_visible = newVisibility
+      }
+    } else {
+      // For other filters, reload to remove/add from the filtered list
+      await loadPublications()
     }
 
     toast.add({
@@ -290,11 +347,16 @@ const handleToggleConfidential = async (publicationId: number, newConfidential: 
   try {
     await togglePublicationConfidential(publicationId, newConfidential)
     
-    // Update the local state without reloading
-    const publication = publications.value.find(p => p.id === publicationId)
-    if (publication) {
-      publication.confidential = newConfidential
-      publication.is_confidential = newConfidential
+    // If filter is 'all', just update the local state without reloading
+    if (selectedFilter.value === 'all') {
+      const publication = publications.value.find(p => p.id === publicationId)
+      if (publication) {
+        publication.confidential = newConfidential
+        publication.is_confidential = newConfidential
+      }
+    } else {
+      // For other filters, reload to remove/add from the filtered list
+      await loadPublications()
     }
     
     toast.add({
@@ -374,8 +436,8 @@ const handleCommentAdded = (publicationId: number, comment: any) => {
 
 // ===== INITIALIZE =====
 onMounted(async () => {
-  console.log('Component mounted, loading publications, tags and users...')
-  await Promise.all([loadTags(), loadUsers(), loadPublications()])
+  console.log('Component mounted, loading publications and tags...')
+  await Promise.all([loadTags(), loadPublications()])
 })
 
 </script>
@@ -391,7 +453,7 @@ onMounted(async () => {
         </template>
 
         <template #right>
-          <UButton v-if="user" icon="i-lucide-plus" size="md" @click="showAddModal = true">
+          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
             New Publication
           </UButton>
         </template>
@@ -399,8 +461,8 @@ onMounted(async () => {
     </template>
 
     <!-- BODY -->
-    <template #body>      <!-- Search (only for authenticated users) -->
-      <div v-if="user" class="mb-6 space-y-4">
+    <template #body>      <!-- Search -->
+      <div class="mb-6 space-y-4">
         <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <UIcon name="i-lucide-search" class="w-4 h-4" />
           <span>Search Publications</span>
@@ -413,44 +475,23 @@ onMounted(async () => {
             icon="i-lucide-text"
             placeholder="Search by title..."
             clearable
-            @blur="applyFilters"
           />
 
-          <!-- Search by Author -->
-          <USelect 
+          <!-- Search by Author ID -->
+          <UInput 
             v-model="searchAuthorId"
-            :items="[
-              { value: 'ALL_AUTHORS', label: 'All authors' },
-              ...users.map(user => ({ value: user.id.toString(), label: user.name }))
-            ]"
             icon="i-lucide-user"
-            placeholder="Select author"
-            :loading="usersLoading"
-            searchable
-            @change="applyFilters"
+            type="number"
+            placeholder="Author ID..."
+            clearable
           />
 
           <!-- Search by Scientific Area -->
-          <USelect 
+          <UInput 
             v-model="searchScientificArea"
-            :items="[
-              { value: 'ALL_AREAS', label: 'All scientific areas' },
-              { value: 'Peer-reviewed scientific articles', label: 'Peer-reviewed scientific articles' },
-              { value: 'Conference proceedings', label: 'Conference proceedings' },
-              { value: 'Book chapters or scientific books', label: 'Book chapters or scientific books' },
-              { value: 'Technical reports', label: 'Technical reports' },
-              { value: 'Patents', label: 'Patents' },
-              { value: 'Scientific data (datasets)', label: 'Scientific data (datasets)' },
-              { value: 'Software (open source)', label: 'Software (open source)' },
-              { value: 'AI models', label: 'AI models' },
-              { value: 'Databases', label: 'Databases' },
-              { value: 'Master\'s or doctoral theses', label: 'Master\'s or doctoral theses' },
-              { value: 'Scientific outreach articles', label: 'Scientific outreach articles' }
-            ]"
             icon="i-lucide-flask-conical"
-            placeholder="Select scientific area"
-            searchable
-            @change="applyFilters"
+            placeholder="Scientific area..."
+            clearable
           />
         </div>
 
@@ -463,7 +504,6 @@ onMounted(async () => {
             icon="i-lucide-calendar"
             placeholder="Start date..."
             clearable
-            @blur="applyFilters"
           />
 
           <!-- Date to -->
@@ -473,13 +513,41 @@ onMounted(async () => {
             icon="i-lucide-calendar"
             placeholder="End date..."
             clearable
-            @blur="applyFilters"
           />
         </div>
       </div>
-      <!-- Sorting -->
+      <!-- Filters -->
       <div class="mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Visibility -->
+          <USelect 
+            v-model="selectedFilter" 
+            :items="[
+              { value: 'all', label: 'All' },
+              { value: 'visible', label: 'Visible' },
+              { value: 'confidential', label: 'Confidential' },
+              { value: 'hidden', label: 'Hidden' }
+            ]" 
+            placeholder="Filter by visibility"
+            clearable
+          />
+
+          <!-- Tags -->
+          <USelect 
+            v-model="selectedTag" 
+            :items="[
+              { value: null, label: 'All tags' },
+              ...tags.map(tag => ({ value: tag.id, label: tag.name }))
+            ]"
+            placeholder="Filter by tag"
+            :loading="tagsLoading"
+            searchable
+            clearable
+          />
+        </div>
+
+        <!-- Sorting -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <!-- Order by -->
           <USelect 
             v-model="sortBy" 
@@ -526,17 +594,13 @@ onMounted(async () => {
       </div>
 
       <!-- Paginação -->
-      <div v-if="publications.length > 0" class="flex flex-col items-center gap-4 pt-6">
-        <div class="text-sm text-gray-500">
-          Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total)
-        </div>
+      <div class="flex justify-center pt-6">
         <UPagination 
-          v-model="currentPage"
-          :total="totalItems"
-          :page-count="itemsPerPage"
+          :default-page="currentPage" 
+          :page-count="totalPages" 
+          :total="totalItems" 
           size="sm"
-          show-first
-          show-last
+          @update:page="handlePageChange"
         />
       </div>
     </template>
