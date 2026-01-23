@@ -16,6 +16,7 @@ const {
   loading,
   fetchUserPublications,
   togglePublicationVisibility,
+  togglePublicationConfidential,
   sortPublications,
   searchPublications,
   clearPublications
@@ -159,6 +160,32 @@ const handleToggleVisibility = async (publicationId: number, newVisibility: bool
   }
 }
 
+// ===== ALTERAR CONFIDENCIALIDADE =====
+const handleToggleConfidential = async (publicationId: number, newConfidential: boolean) => {
+  try {
+    await togglePublicationConfidential(publicationId, newConfidential)
+    
+    // Update local state
+    const publication = publications.value.find(p => p.id === publicationId)
+    if (publication) {
+      publication.confidential = newConfidential
+      publication.is_confidential = newConfidential
+    }
+    
+    toast.add({
+      title: 'Success',
+      description: newConfidential ? 'Publication marked as confidential' : 'Publication marked as not confidential',
+      color: 'success'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'Error',
+      description: error?.data?.error || 'Failed to change confidentiality',
+      color: 'error'
+    })
+  }
+}
+
 // ===== ABRIR MODAL DE RATING =====
 const handleRatePublication = (publication: any) => {
   selectedPublicationForRating.value = publication
@@ -281,7 +308,9 @@ onMounted(() => {
         <PublicationsListItem v-for="publication in publications" :key="publication.id" :publication="publication"
           :current-user-id="user?.id || 0" 
           :show-history="true"
-          @toggle-visibility="handleToggleVisibility" @rate="handleRatePublication"
+          @toggle-visibility="handleToggleVisibility" 
+          @toggle-confidential="handleToggleConfidential"
+          @rate="handleRatePublication"
           @edit-summary="handleEditSummary" @comment-added="handleCommentAdded" />
       </div>
 
