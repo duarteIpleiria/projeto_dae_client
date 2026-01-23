@@ -49,13 +49,6 @@ function handleLogin() {
 const items = computed<DropdownMenuItem[][]>(() => {
   if (!isAuthenticated.value) {
     return [[{
-      type: 'label',
-      label: 'Guest',
-      avatar: {
-        src: 'https://github.com/benjamincanac.png',
-        alt: 'Guest'
-      }
-    }], [{
       label: 'Log In',
       icon: 'i-lucide-log-in',
       onSelect(e) {
