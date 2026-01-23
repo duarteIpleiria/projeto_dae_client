@@ -234,15 +234,13 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         </UFormField>
 
         <!-- Initial Comment -->
-        <UFormField label="Initial Comment" name="initial_comment">
-          <UTextarea
-            v-model="initialComment"
-            placeholder="Add an initial comment about your publication (optional)"
-            :rows="3"
-            resize
-          />
-          <p class="text-xs text-gray-500 mt-1">This comment will be added automatically after publication creation</p>
-        </UFormField>
+        <UTextarea
+          v-model="initialComment"
+          placeholder="Add an initial comment about your publication (optional)"
+          :rows="3"
+          resize
+          class="border border-gray-200 rounded-lg bg-white dark:bg-gray-900 dark:border-gray-700 w-full p-3"
+        />
 
        
         <UFormField label="File" name="file">
