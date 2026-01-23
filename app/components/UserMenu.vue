@@ -25,10 +25,10 @@ console.log('user in UserMenu.vue: ', user.value)
 const isAuthenticated = computed(() => !!user.value)
 
 const userLocal = computed(() => ({
-  name: user.value?.name ?? 'Visitante',
+  name: user.value?.name ?? 'Guest',
   avatar: {
     src: 'https://github.com/benjamincanac.png',
-    alt: user.value?.name ?? 'Visitante'
+    alt: user.value?.name ?? 'Guest'
   }
 }))
 
@@ -50,13 +50,13 @@ const items = computed<DropdownMenuItem[][]>(() => {
   if (!isAuthenticated.value) {
     return [[{
       type: 'label',
-      label: 'Visitante',
+      label: 'Guest',
       avatar: {
         src: 'https://github.com/benjamincanac.png',
-        alt: 'Visitante'
+        alt: 'Guest'
       }
     }], [{
-      label: 'Fazer Login',
+      label: 'Log In',
       icon: 'i-lucide-log-in',
       onSelect(e) {
         e.preventDefault()

@@ -22,6 +22,7 @@ const api = config.public.apiBase
 const toast = useToast()
 
 const open = ref(false)
+const isSubmitting = ref(false)
 
 const schema = z.object({
   role: z.enum(['Collaborator', 'Manager', 'Administrator'], {
@@ -36,9 +37,9 @@ const state = reactive<Schema>({
 })
 
 const roleOptions = [
-  'Collaborator',
-  'Manager',
-  'Administrator'
+  { value: 'Collaborator', label: 'Collaborator' },
+  { value: 'Manager', label: 'Manager' },
+  { value: 'Administrator', label: 'Administrator' }
 ]
 
 // Open modal when user is set
@@ -64,37 +65,60 @@ watch(open, (isOpen) => {
 })
 
 async function onSubmit() {
-  if (!props.user) return
+  if (!props.user || isSubmitting.value) return
 
-  const { data, error } = await useFetch(`${api}/users/${props.user.id}/role`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      role: state.role
-    })
-  })
-
-  if (error.value) {
+  // Check if role actually changed
+  if (state.role === props.user.role) {
     toast.add({
-      title: 'Error',
-      description: 'There was an error updating the role',
-      color: 'error'
+      title: 'No changes',
+      description: 'The role is already set to this value',
+      color: 'warning',
+      icon: 'i-lucide-info'
     })
+    open.value = false
+    emit('close')
     return
   }
 
-  const response = data.value as any
-  toast.add({
-    title: 'Success',
-    description: 'Role updated successfully',
-    color: 'success'
-  })
+  isSubmitting.value = true
 
-  open.value = false
-  emit('updated')
+  try {
+    const updatedUser = await $fetch(`${api}/users/${props.user.id}/role`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: {
+        role: state.role
+      }
+    })
+
+    console.log('[ChangeRoleModal] Role updated successfully:', updatedUser)
+
+    toast.add({
+      title: 'Success',
+      description: `Role updated to ${state.role} successfully`,
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+
+    open.value = false
+    emit('updated')
+  } catch (error: any) {
+    console.error('[ChangeRoleModal] Error updating role:', error)
+    
+    const errorMessage = error?.data?.message || error?.message || 'There was an error updating the role'
+    
+    toast.add({
+      title: 'Error',
+      description: errorMessage,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -107,11 +131,13 @@ async function onSubmit() {
     <template #body>
       <UForm :schema="schema" :state="state" @submit="onSubmit">
         <UFormField label="Role" name="role" required>
-          <select v-model="state.role" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-            <option v-for="role in roleOptions" :key="role" :value="role">
-              {{ role }}
-            </option>
-          </select>
+          <USelect
+            v-model="state.role"
+            :items="roleOptions"
+            option-attribute="label"
+            value-attribute="value"
+            placeholder="Select a role"
+          />
         </UFormField>
 
         <div class="flex justify-end gap-2 mt-4">
@@ -119,6 +145,7 @@ async function onSubmit() {
             label="Cancel"
             color="neutral"
             variant="subtle"
+            :disabled="isSubmitting"
             @click="open = false"
           />
           <UButton
@@ -126,7 +153,7 @@ async function onSubmit() {
             color="primary"
             variant="solid"
             type="submit"
-            loading-auto
+            :loading="isSubmitting"
           />
         </div>
       </UForm>

@@ -242,7 +242,7 @@ function getUserActions(user: UserData) {
           </p>
         </div>
 
-        <div v-else class="divide-y divide-default">
+        <div v-else class="divide-y divide-default pb-20">
           <div
             v-for="user in filteredUsers"
             :key="user.id"
@@ -482,9 +482,10 @@ function getUserActions(user: UserData) {
   <UsersChangeRoleModal
     :user="selectedUserForRoleChange"
     @updated="async () => {
-      await reloadUsers()
-      // No need to manually update selectedUserForView - the computed property will auto-update
+      console.log('[Users Page] Role updated, reloading users...')
       selectedUserForRoleChange = null
+      await reloadUsers()
+      console.log('[Users Page] Users reloaded after role change')
     }"
     @close="() => {
       selectedUserForRoleChange = null
