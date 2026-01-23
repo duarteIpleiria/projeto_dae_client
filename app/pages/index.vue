@@ -3,6 +3,13 @@ import { sub } from 'date-fns'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Period, Range } from '~/types'
 
+const authStore = useAuthStore()
+
+// Redirect guests to publications
+if (!authStore.user) {
+  navigateTo('/publications')
+}
+
 const { isNotificationsSlideoverOpen } = useDashboard()
 
 const items = [[{
