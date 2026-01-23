@@ -73,7 +73,7 @@ const authStore = useAuthStore()
 
 // Check if user can manage comment visibility
 const canManageComments = computed(() => {
-  const canManage = authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  const canManage = isAdminOrManager(authStore.user?.role)
   console.log('👤 User role:', authStore.user?.role, '| Can manage comments:', canManage)
   return canManage
 })
@@ -82,7 +82,7 @@ const canManageComments = computed(() => {
 const canViewHistory = computed(() => {
   if (!authStore.user) return false
   const role = authStore.user?.role
-  return role === 'Colaborador' || role === 'Responsavel' || role === 'Administrador'
+  return canManageContent(role)
 })
 
 // Get user's rating for this publication
@@ -121,7 +121,7 @@ const isAuthor = computed((): boolean => {
 // Check if user can edit publication (author or admin)
 const canEdit = computed(() => {
   // Admin can edit all publications
-  if (authStore.user?.role === 'Administrador') {
+  if (isAdmin(authStore.user?.role)) {
     return true
   }
   // Other users can only edit their own publications
@@ -135,7 +135,7 @@ const canChangeVisibility = computed(() => {
 
 // Check if user can change confidentiality (only admin/responsavel)
 const canChangeConfidential = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  return isAdminOrManager(authStore.user?.role)
 })
 
 const showComments = ref(true)

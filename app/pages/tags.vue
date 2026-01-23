@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth-store.js";
 import { useTagsStore } from "~/stores/tags-store";
+import { isAdminOrManager } from "~/utils";
 
 const authStore = useAuthStore();
 const tagsStore = useTagsStore();
@@ -33,7 +34,7 @@ const tags = computed(() => (data.value as any) || []);
 
 // Check if user can manage tag visibility (Administrador or Responsavel)
 const canManageVisibility = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  return isAdminOrManager(authStore.user?.role)
 })
 
 // Initialize tags store with server data on mount

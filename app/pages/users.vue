@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from "~/stores/auth-store.js";
+import { isAdmin } from "~/utils";
 
 const authStore = useAuthStore();
 const token = authStore.token;
@@ -106,7 +107,7 @@ const availableRoles = computed(() => {
 
 function getUserActions(user: UserData) {
   const isOwnAccount = user.id === authStore.user.id
-  const isAdmin = authStore.user.role === 'Administrator'
+  const isAdminUser = isAdmin(authStore.user.role)
   const isActive = user.active !== false
 
   const baseActions = [{
@@ -400,7 +401,7 @@ function getUserActions(user: UserData) {
         </UCard>
 
         <!-- Actions Card -->
-        <UCard v-if="authStore.user.role === 'Administrator' && selectedUserForView.id !== authStore.user.id">
+        <UCard v-if="isAdmin(authStore.user.role) && selectedUserForView.id !== authStore.user.id">
           <template #header>
             <h3 class="font-semibold">Admin Actions</h3>
           </template>
