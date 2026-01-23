@@ -135,27 +135,42 @@ const loadPublications = async () => {
     // Search is only available for authenticated users
     if (hasSearchCriteria && token) {
       const searchBody: any = {}
-      if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
+      
+      // Only add non-empty values to avoid sending empty strings
+      if (searchTitle.value && searchTitle.value.trim()) {
+        searchBody.title = searchTitle.value.trim()
+      }
+      
       if (searchAuthorId.value && searchAuthorId.value.trim() && searchAuthorId.value !== 'ALL_AUTHORS') {
         const authorIdNum = parseInt(searchAuthorId.value)
         if (!isNaN(authorIdNum)) {
           searchBody.authorId = authorIdNum
         }
       }
+      
       if (searchTagId.value && searchTagId.value.trim() && searchTagId.value !== 'ALL_TAGS') {
         const tagIdNum = parseInt(searchTagId.value)
         if (!isNaN(tagIdNum)) {
+          // Backend expects an array of tag IDs for the IN clause
           searchBody.tags = [tagIdNum]
+          console.log('🏷️ Tag ID being sent:', searchBody.tags)
         }
       }
+      
       if (searchScientificArea.value && searchScientificArea.value.trim() && searchScientificArea.value !== 'ALL_AREAS') {
         searchBody.scientificArea = searchScientificArea.value.trim()
       }
-      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.dateFrom = searchDateFrom.value.trim()
-      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.dateTo = searchDateTo.value.trim()
+      
+      if (searchDateFrom.value && searchDateFrom.value.trim()) {
+        searchBody.dateFrom = searchDateFrom.value.trim()
+      }
+      
+      if (searchDateTo.value && searchDateTo.value.trim()) {
+        searchBody.dateTo = searchDateTo.value.trim()
+      }
 
-    console.log('🔍 Search body:', JSON.stringify(searchBody, null, 2))
-    console.log('📅 dateFrom:', searchDateFrom.value, 'dateTo:', searchDateTo.value)
+    console.log('🔍 Search body being sent:', JSON.stringify(searchBody, null, 2))
+    console.log('📅 Date filters - From:', searchDateFrom.value, 'To:', searchDateTo.value)
 
       response = await $fetch(`${api}/posts/search`, {
         method: 'POST',
