@@ -242,7 +242,7 @@ function getUserActions(user: UserData) {
           </p>
         </div>
 
-        <div v-else class="divide-y divide-default">
+        <div v-else class="divide-y divide-default pb-20">
           <div
             v-for="user in filteredUsers"
             :key="user.id"
