@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Tags Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .loading { color: blue; }
+        .error { color: red; }
+        .success { color: green; }
+        .tag { margin: 5px; padding: 5px; background: #f0f0f0; border-radius: 3px; display: inline-block; }
+    </style>
+</head>
+<body>
+    <h1>Test Tags Loading</h1>
+    <button onclick="testLoadTags()">Load Tags</button>
+    <div id="status">Click button to test</div>
+    <div id="tags"></div>
+
+    <script>
+        async function testLoadTags() {
+            const statusDiv = document.getElementById('status');
+            const tagsDiv = document.getElementById('tags');
+            
+            statusDiv.innerHTML = '<span class="loading">Loading tags...</span>';
+            tagsDiv.innerHTML = '';
+            
+            try {
+                console.log('Fazendo requisição para: http://localhost:8080/academics/api/tags');
+                
+                const response = await fetch('http://localhost:8080/academics/api/tags', {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                console.log('Resposta recebida:', response);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const tags = await response.json();
+                console.log('Tags recebidas:', tags);
+                
+                statusDiv.innerHTML = '<span class="success">✅ Tags loaded successfully!</span>';
+                
+                tagsDiv.innerHTML = tags.map(tag => 
+                    `<div class="tag">ID: ${tag.id}, Name: ${tag.name}, Visible: ${tag.visible}</div>`
+                ).join('');
+                
+            } catch (error) {
+                console.error('Erro ao carregar tags:', error);
+                statusDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

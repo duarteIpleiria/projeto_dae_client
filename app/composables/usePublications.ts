@@ -79,6 +79,8 @@ export const usePublications = () => {
     is_visible: boolean
     is_confidential?: boolean
     file: File
+    tags?: number[]
+    initial_comment?: string
   }) => {
     loading.value = true
     error.value = null
@@ -95,6 +97,20 @@ export const usePublications = () => {
         formData.append('is_confidential', data.is_confidential.toString())
       }
       formData.append('file', data.file)
+      
+      // Adicionar tags se fornecidas
+      if (data.tags && data.tags.length > 0) {
+        console.log('Enviando tags:', data.tags)
+        formData.append('tags', JSON.stringify(data.tags))
+      }
+      
+      // Adicionar comentário inicial se fornecido
+      if (data.initial_comment && data.initial_comment.trim()) {
+        console.log('Enviando comentário inicial:', data.initial_comment.trim())
+        formData.append('initial_comment', data.initial_comment.trim())
+      }
+
+      console.log('FormData preparado. Enviando para API...')
 
       const response = await $fetch(`${api}/posts`, {
         method: 'POST',
