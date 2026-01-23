@@ -471,6 +471,8 @@ onMounted(async () => {
               { value: 'Software (open source)', label: 'Software (open source)' },
               { value: 'AI models', label: 'AI models' },
               { value: 'Databases', label: 'Databases' },
+              { value: 'Data Science', label: 'Data Science' },
+              { value: 'Materials Science', label: 'Materials Science' },
               { value: 'Master\'s or doctoral theses', label: 'Master\'s or doctoral theses' },
               { value: 'Scientific outreach articles', label: 'Scientific outreach articles' }
             ]"
