@@ -106,7 +106,7 @@ const availableRoles = computed(() => {
 
 function getUserActions(user: UserData) {
   const isOwnAccount = user.id === authStore.user.id
-  const isAdmin = authStore.user.role === 'Administrador'
+  const isAdmin = authStore.user.role === 'Administrator'
   const isActive = user.active !== false
 
   const baseActions = [{
@@ -400,7 +400,7 @@ function getUserActions(user: UserData) {
         </UCard>
 
         <!-- Actions Card -->
-        <UCard v-if="authStore.user.role === 'Administrador' && selectedUserForView.id !== authStore.user.id">
+        <UCard v-if="authStore.user.role === 'Administrator' && selectedUserForView.id !== authStore.user.id">
           <template #header>
             <h3 class="font-semibold">Admin Actions</h3>
           </template>

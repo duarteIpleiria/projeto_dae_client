@@ -11,7 +11,7 @@ const open = ref(false)
 
 // Check if user can access hidden content
 const canAccessHiddenContent = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  return authStore.user?.role === 'Administrator' || authStore.user?.role === 'Manager'
 })
 
 const links = computed(() => {
@@ -50,8 +50,8 @@ const links = computed(() => {
     }
   }]
 
-  // Add Users link only for Administrador
-  if (authStore.user?.role === 'Administrador') {
+  // Add Users link only for Administrator
+  if (authStore.user?.role === 'Administrator') {
     baseLinks.push({
       label: 'Users',
       icon: 'i-lucide-user',

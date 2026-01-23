@@ -331,7 +331,7 @@ const toast = useToast()
 
 // Role guard
 const canAccessHiddenContent = computed(() => {
-  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+  return authStore.user?.role === 'Administrator' || authStore.user?.role === 'Manager'
 })
 
 onMounted(() => {

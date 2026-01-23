@@ -26,7 +26,7 @@ const open = ref(false)
 const schema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  role: z.enum(['Colaborador', 'Responsavel', 'Administrador'], {
+  role: z.enum(['Collaborator', 'Manager', 'Administrator'], {
     required_error: 'Role is required'
   })
 })
@@ -36,13 +36,13 @@ type Schema = z.output<typeof schema>
 const state = reactive<Schema>({
   name: '',
   email: '',
-  role: 'Colaborador'
+  role: 'Collaborator'
 })
 
 const roleOptions = [
-  'Colaborador',
-  'Responsavel',
-  'Administrador'
+  'Collaborator',
+  'Manager',
+  'Administrator'
 ]
 
 // Populate form when user prop is set
