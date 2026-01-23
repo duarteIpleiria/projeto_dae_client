@@ -32,6 +32,7 @@ const selectedPublicationForEdit = ref<any>(null)
 
 const searchTitle = ref('')
 const searchAuthorId = ref('ALL_AUTHORS')
+
 const searchTagId = ref('ALL_TAGS')
 const searchScientificArea = ref('ALL_AREAS')
 const searchDateFrom = ref('')
