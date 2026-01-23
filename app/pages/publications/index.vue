@@ -155,6 +155,7 @@ const loadPublications = async () => {
       if (searchDateTo.value && searchDateTo.value.trim()) searchBody.dateTo = searchDateTo.value.trim()
 
     console.log('🔍 Search body:', JSON.stringify(searchBody, null, 2))
+    console.log('📅 dateFrom:', searchDateFrom.value, 'dateTo:', searchDateTo.value)
 
       response = await $fetch(`${api}/posts/search`, {
         method: 'POST',
@@ -257,6 +258,26 @@ watch(sortOrder, async (newOrder) => {
 
 watch(currentPage, async () => {
   console.log('🔄 Page changed to:', currentPage.value)
+  await loadPublications()
+})
+
+// Watch for date changes to auto-refresh
+watch(searchDateFrom, async (newDateFrom) => {
+  console.log('📅 Date from changed to:', newDateFrom)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+watch(searchDateTo, async (newDateTo) => {
+  console.log('📅 Date to changed to:', newDateTo)
+  currentPage.value = 1
+  await loadPublications()
+})
+
+// Watch for title search changes to auto-refresh
+watch(searchTitle, async (newTitle) => {
+  console.log('🔍 Title search changed to:', newTitle)
+  currentPage.value = 1
   await loadPublications()
 })
 
@@ -423,7 +444,7 @@ onMounted(async () => {
             icon="i-lucide-text"
             placeholder="Search by title..."
             clearable
-            @blur="applyFilters"
+            @input="applyFilters"
           />
 
           <!-- Search by Author -->
@@ -489,7 +510,7 @@ onMounted(async () => {
             icon="i-lucide-calendar"
             placeholder="Start date..."
             clearable
-            @blur="applyFilters"
+            @change="applyFilters"
           />
 
           <!-- Date to -->
@@ -499,7 +520,7 @@ onMounted(async () => {
             icon="i-lucide-calendar"
             placeholder="End date..."
             clearable
-            @blur="applyFilters"
+            @change="applyFilters"
           />
         </div>
       </div>
