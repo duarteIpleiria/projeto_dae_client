@@ -8,7 +8,6 @@ interface Publication {
   title: string
   scientific_area: string
   summary: string
-  is_visible: boolean
 }
 
 interface Props {
@@ -38,8 +37,7 @@ const open = computed({
 const schema = z.object({
   title: z.string().min(3, 'Title must have at least 3 characters'),
   scientific_area: z.string().min(3, 'Scientific area is required'),
-  summary: z.string().min(3, 'Summary must have at least 3 characters'),
-  is_visible: z.boolean()
+  summary: z.string().min(3, 'Summary must have at least 3 characters')
 })
 
 type Schema = z.output<typeof schema>
@@ -47,8 +45,7 @@ type Schema = z.output<typeof schema>
 const state = reactive<Schema>({
   title: '',
   scientific_area: '',
-  summary: '',
-  is_visible: false
+  summary: ''
 })
 
 const file = ref<File | null>(null)
@@ -68,7 +65,6 @@ watch(open, (isOpen) => {
     state.title = props.publication.title
     state.scientific_area = props.publication.scientificArea || props.publication.scientific_area
     state.summary = props.publication.summary
-    state.is_visible = props.publication.visible ?? props.publication.is_visible
     
     // Preencher arquivo existente
     existingFileName.value = props.publication.fileName || props.publication.filename || null
@@ -82,7 +78,6 @@ watch(open, (isOpen) => {
     state.title = ''
     state.scientific_area = ''
     state.summary = ''
-    state.is_visible = false
     file.value = null
     existingFileName.value = null
     existingFileUrl.value = null
@@ -96,7 +91,6 @@ watch(() => props.publication, (newPub) => {
     state.title = newPub.title
     state.scientific_area = newPub.scientificArea || newPub.scientific_area
     state.summary = newPub.summary
-    state.is_visible = newPub.visible ?? newPub.is_visible
     
     // Atualizar arquivo existente
     existingFileName.value = newPub.fileName || newPub.filename || null
@@ -218,7 +212,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       title: event.data.title,
       scientific_area: event.data.scientific_area,
       summary: event.data.summary,
-      is_visible: event.data.is_visible,
       file: file.value || undefined
     })
 
@@ -291,10 +284,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           </template>
         </UFormField>
 
-        <!-- Visibility -->
-        <UFormField label="Visibility" name="is_visible">
-          <UCheckbox v-model="state.is_visible" label="Publication visible" />
-        </UFormField>
+
 
         <!-- File (Optional) -->
         <UFormField label="File (Optional)" name="file">
