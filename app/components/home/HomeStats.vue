@@ -34,14 +34,17 @@ const { data: stats, refresh } = await useAsyncData<AppStats[]>('app-stats', asy
           'Content-Type': 'application/json'
         },
         body: {}
-      }).catch(() => []),
+      }).catch(() => ({ data: [] })),
       $fetch(`${api}/tags`, {
         headers: { Authorization: `Bearer ${token.value}` }
       }).catch(() => [])
     ])
 
     const users = Array.isArray(usersRes) ? usersRes : []
-    const publications = Array.isArray(publicationsRes) ? publicationsRes : []
+    // Extract data from search response
+    const publications = Array.isArray(publicationsRes) 
+      ? publicationsRes 
+      : (publicationsRes?.data || [])
     const tags = Array.isArray(tagsRes) ? tagsRes : []
 
     console.log('Dashboard - Publications:', publications)

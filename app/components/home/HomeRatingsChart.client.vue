@@ -37,7 +37,10 @@ const loadRatingsDistribution = async () => {
       body: {}
     })
 
-    const publications = Array.isArray(response) ? response : []
+    // Extract data from search response
+    const publications = Array.isArray(response) 
+      ? response 
+      : (response?.data || [])
     
     // Group by rating (0-5 in 0.5 steps)
     const ratingCount: Record<number, number> = {

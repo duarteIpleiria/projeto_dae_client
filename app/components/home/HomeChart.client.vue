@@ -36,7 +36,10 @@ const loadPublicationsByArea = async () => {
       body: {}
     })
 
-    const publications = Array.isArray(response) ? response : []
+    // Extract data from search response
+    const publications = Array.isArray(response) 
+      ? response 
+      : (response?.data || [])
     
     // Group by scientific area
     const areaCount: Record<string, number> = {}
@@ -61,11 +64,31 @@ watch([() => props.period, () => props.range], loadPublicationsByArea, { immedia
 const x = (_: DataRecord, i: number) => i
 const y = (d: DataRecord) => d.count
 
+// Force all tick values to be shown
+const tickValues = computed(() => data.value.map((_, i) => i))
+
 const xTicks = (i: number) => {
   if (!data.value[i]) return ''
-  return data.value[i].area.length > 15 
-    ? data.value[i].area.substring(0, 15) + '...' 
-    : data.value[i].area
+  const area = data.value[i].area
+  
+  // Split into two lines if longer than 20 characters
+  if (area.length > 20) {
+    const words = area.split(' ')
+    let line1 = ''
+    let line2 = ''
+    
+    for (const word of words) {
+      if (line1.length === 0 || (line1 + ' ' + word).length <= 20) {
+        line1 += (line1 ? ' ' : '') + word
+      } else {
+        line2 += (line2 ? ' ' : '') + word
+      }
+    }
+    
+    return line2 ? line1 + '\n' + line2 : line1
+  }
+  
+  return area
 }
 
 const template = (d: DataRecord) => `${d.area}: ${d.count} publications`
@@ -87,7 +110,7 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publications`
     <VisXYContainer
       v-if="data.length > 0"
       :data="data"
-      :padding="{ top: 40, bottom: 60 }"
+      :padding="{ top: 40, bottom: 90 }"
       class="h-96"
       :width="width"
     >
@@ -102,6 +125,7 @@ const template = (d: DataRecord) => `${d.area}: ${d.count} publications`
         type="x"
         :x="x"
         :tick-format="xTicks"
+        :tick-values="tickValues"
         :tick-text-angle="-45"
       />
 
