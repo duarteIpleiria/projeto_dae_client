@@ -594,20 +594,7 @@ onMounted(async () => {
           @comment-added="handleCommentAdded" />
       </div>
 
-      <!-- Paginação -->
-      <div v-if="publications.length > 0" class="flex flex-col items-center gap-4 pt-6">
-        <div class="text-sm text-gray-500">
-          Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total)
-        </div>
-        <UPagination 
-          v-model="currentPage"
-          :total="totalItems"
-          :page-count="itemsPerPage"
-          size="sm"
-          show-first
-          show-last
-        />
-      </div>
+      
     </template>
   </UDashboardPanel>
 
