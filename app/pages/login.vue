@@ -81,9 +81,13 @@ async function login() {
     
     loginFormData.password = ''
     
+    // Check if user is deactivated
+    const errorData = e.data || {}
+    const isDeactivated = errorData.error === 'USER_DEACTIVATED' || e.status === 403
+    
     toast.add({
-      title: 'Login error',
-      description: e.data?.message || 'Invalid credentials',
+      title: isDeactivated ? 'Account Deactivated' : 'Login error',
+      description: errorData.message || 'Invalid credentials',
       color: 'error'
     })
   } finally {
