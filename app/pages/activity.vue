@@ -341,20 +341,9 @@ onMounted(() => {
       </div>
 
       <!-- Pagination -->
-      <div v-if="activities.length > 0" class="flex justify-center pt-6">
-        <UPagination 
-          :model-value="currentPage"
-          :page-count="totalPagesComputed" 
-          :total="totalActivities" 
-          size="sm"
-          @update:model-value="handlePageChange"
-        />
-      </div>
+     
 
-      <!-- Pagination info -->
-      <div v-if="activities.length > 0" class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} - {{ Math.min(currentPage * itemsPerPage, totalActivities) }} of {{ totalActivities }} activities
-      </div>
+     
     </template>
   </UDashboardPanel>
 </template>
