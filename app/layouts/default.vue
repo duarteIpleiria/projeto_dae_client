@@ -28,14 +28,22 @@ const links = computed(() => {
     }], []] satisfies NavigationMenuItem[][]
   }
 
-  const baseLinks: NavigationMenuItem[] = [{
-    label: 'Home',
-    icon: 'i-lucide-house',
-    to: '/',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
+  const baseLinks: NavigationMenuItem[] = []
+
+  // Add Home link only for Administrator
+  if (isAdmin(authStore.user?.role)) {
+    baseLinks.push({
+      label: 'Home',
+      icon: 'i-lucide-house',
+      to: '/',
+      onSelect: () => {
+        open.value = false
+      }
+    })
+  }
+
+  // Publications and Tags for all authenticated users
+  baseLinks.push({
     label: 'Publications',
     icon: 'i-lucide-book-open-check',
     to: '/publications',
@@ -49,7 +57,7 @@ const links = computed(() => {
     onSelect: () => {
       open.value = false
     }
-  }]
+  })
 
   // Add Users link only for Administrator
   if (isAdmin(authStore.user?.role)) {
