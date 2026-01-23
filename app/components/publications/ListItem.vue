@@ -133,6 +133,11 @@ const canChangeVisibility = computed(() => {
   return isAuthor.value || canManageComments.value
 })
 
+// Check if user can change confidentiality (only admin/responsavel)
+const canChangeConfidential = computed(() => {
+  return authStore.user?.role === 'Administrador' || authStore.user?.role === 'Responsavel'
+})
+
 const showComments = ref(true)
 const newComment = ref('')
 const commentLoading = ref(false)
@@ -749,9 +754,9 @@ const hasFile = computed(() => {
         </div>
 
         <div class="flex gap-2 flex-shrink-0 items-center">
-          <!-- Toggle confidential (all authenticated users) -->
+          <!-- Toggle confidential (only admin/responsavel) -->
           <UButton 
-            v-if="authStore.user" 
+            v-if="canChangeConfidential" 
             color="orange" 
             variant="ghost" 
             size="sm"
