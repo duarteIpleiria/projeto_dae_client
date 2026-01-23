@@ -45,6 +45,19 @@ const state = reactive<Partial<Schema>>({
   is_confidential: false
 })
 
+// Watch for mutual exclusivity between visible and confidential
+watch(() => state.is_visible, (newValue) => {
+  if (newValue && state.is_confidential) {
+    state.is_confidential = false
+  }
+})
+
+watch(() => state.is_confidential, (newValue) => {
+  if (newValue && state.is_visible) {
+    state.is_visible = false
+  }
+})
+
 const file = ref<File | null>(null)
 const ALLOWED_TYPES = [
   'application/pdf',

@@ -96,22 +96,26 @@ const loadPublications = async () => {
 
     let response: any
 
-    // If there are search criteria, use the search endpoint
-    const hasSearchCriteria = searchTitle.value || searchAuthorId.value || searchScientificArea.value || 
-                              searchDateFrom.value || searchDateTo.value
+    // If there are search criteria, use the search endpoint (only for authenticated users)
+    const hasSearchCriteria = (searchTitle.value && searchTitle.value.trim()) || 
+                              (searchAuthorId.value && searchAuthorId.value.trim()) || 
+                              (searchScientificArea.value && searchScientificArea.value.trim()) || 
+                              (searchDateFrom.value && searchDateFrom.value.trim()) || 
+                              (searchDateTo.value && searchDateTo.value.trim())
     
-    if (hasSearchCriteria) {
+    // Search is only available for authenticated users
+    if (hasSearchCriteria && token) {
       const searchBody: any = {}
-      if (searchTitle.value) searchBody.title = searchTitle.value
-      if (searchAuthorId.value) {
+      if (searchTitle.value && searchTitle.value.trim()) searchBody.title = searchTitle.value.trim()
+      if (searchAuthorId.value && searchAuthorId.value.trim()) {
         const authorIdNum = parseInt(searchAuthorId.value)
         if (!isNaN(authorIdNum)) {
           searchBody.author_id = authorIdNum
         }
       }
-      if (searchScientificArea.value) searchBody.scientific_area = searchScientificArea.value
-      if (searchDateFrom.value) searchBody.date_from = searchDateFrom.value
-      if (searchDateTo.value) searchBody.date_to = searchDateTo.value
+      if (searchScientificArea.value && searchScientificArea.value.trim()) searchBody.scientific_area = searchScientificArea.value.trim()
+      if (searchDateFrom.value && searchDateFrom.value.trim()) searchBody.date_from = searchDateFrom.value.trim()
+      if (searchDateTo.value && searchDateTo.value.trim()) searchBody.date_to = searchDateTo.value.trim()
 
       console.log('Searching publications:', searchBody)
 
@@ -127,14 +131,18 @@ const loadPublications = async () => {
       })
     } else if (sortBy.value) {
       // If sortBy is defined, use sorting
+      const sortHeaders: Record<string, string> = {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json; charset=UTF-8',
+        'Accept-Charset': 'UTF-8'
+      }
+      // Only add Authorization header if user is authenticated
+      if (token) {
+        sortHeaders.Authorization = `Bearer ${token}`
+      }
       response = await $fetch(`${api}/posts/sort`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        },
+        headers: sortHeaders,
         body: {
           sort_by: sortBy.value,
           order: sortOrder.value
@@ -142,12 +150,16 @@ const loadPublications = async () => {
       })
     } else {
       // Fetch without sorting (API default order)
+      const headers: Record<string, string> = {
+        'Accept': 'application/json; charset=UTF-8',
+        'Accept-Charset': 'UTF-8'
+      }
+      // Only add Authorization header if user is authenticated
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
       response = await $fetch(`${api}/posts`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Accept': 'application/json; charset=UTF-8',
-          'Accept-Charset': 'UTF-8'
-        }
+        headers
       })
     }
 
@@ -453,7 +465,7 @@ onMounted(async () => {
         </template>
 
         <template #right>
-          <UButton icon="i-lucide-plus" size="md" @click="showAddModal = true">
+          <UButton v-if="user" icon="i-lucide-plus" size="md" @click="showAddModal = true">
             New Publication
           </UButton>
         </template>
@@ -461,8 +473,8 @@ onMounted(async () => {
     </template>
 
     <!-- BODY -->
-    <template #body>      <!-- Search -->
-      <div class="mb-6 space-y-4">
+    <template #body>      <!-- Search (only for authenticated users) -->
+      <div v-if="user" class="mb-6 space-y-4">
         <div class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
           <UIcon name="i-lucide-search" class="w-4 h-4" />
           <span>Search Publications</span>
